@@ -1,0 +1,106 @@
+---
+title: "Data 607 Assignment 2"
+author: "Dennis Pong"
+date: "2/9/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+STEP 1: Load Movie_Rankings.sql into R dataframe
+
+
+```{r Step1}
+install.packages("RPostgreSQL")
+require("RPostgreSQL")
+ 
+# create a connection
+# save the password that we can "hide" it as best as we can by collapsing it
+pw <- {
+  "pgAdmin4"
+}
+ 
+
+# loads the PostgreSQL driver
+drv <- dbDriver("PostgreSQL")
+# creates a connection to the postgres database
+# note that "con" will be used later in each connection to the database
+con <- dbConnect(drv, dbname = "postgres",
+                 host = "localhost", port = 5433,
+                 user = "postgres", password = pw)
+rm(pw) # removes the password
+
+
+
+# check for the movies_survey_data
+dbExistsTable(con, "movies_survey_data")
+
+# TRUE
+
+
+```
+
+
+
+```{r movies_survey_data, echo=FALSE}
+df_postgres <- dbGetQuery(con, "SELECT * from movies_survey_data")
+
+```
+
+STEP 2: Explore Dataframe
+
+```{r}
+df_postgres
+```
+
+
+
+STEP 3: Replace Null Values
+
+```{r}
+library(DBI)
+
+df_postgres1 <- dbGetQuery(con, "UPDATE movies_survey_data SET interstellar = 0 WHERE interstellar IS NULL")
+df_postgres1
+
+
+rs <- dbSendQuery(con, "select * from movies_survey_data")
+# Fetch the next n elements (rows) from the result set and return them as a data.frame.
+data_fetched <- fetch(rs, n=-1)
+data_fetched
+
+```
+
+
+STEP 4: Summary Statistics
+
+```{r}
+summary(data_fetched)
+
+```
+
+STEP 5: Graph Data Distribution
+
+```{r}
+library(reshape2)
+library(ggplot2)
+
+plot <- ggplot (melt(data_fetched, 1, ), aes(x = variable, y=value)) + geom_boxplot()
+
+plot +  labs (title = "Boxplots of Ratings by movie", x = "Movie Name", y = "Ratings")
+```
+
+
+Step 6: CLOSE the db connection
+
+```{r}
+# Closing all active connections is important
+dbDisconnect(con)
+#dbListConnections( dbDriver( drv = "PostgreSQL"))
+lapply( dbListConnections( dbDriver( drv = "PostgreSQL")), dbDisconnect)
+```
+
