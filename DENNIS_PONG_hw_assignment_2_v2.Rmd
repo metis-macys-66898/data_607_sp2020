@@ -1,0 +1,214 @@
+---
+title: "Data 607 Assignment 2"
+author: "Dennis Pong"
+date: "2/9/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+### Movie Rating Analysis using SQL and R
+
+Step 0: Loading needed libraries 
+
+Github location - 
+https://github.com/metis-macys-66898/data_607_sp2020/blob/master/setup_script.sql
+
+
+```{r}
+library(tidyverse)
+# install.packages("RPostgreSQL")
+# install.packages("keyring")
+# install.packages("chron")
+require("RPostgreSQL")
+require("keyring")
+
+library(DBI)
+require(chron)
+
+library(tibble)
+#library(reshape2)
+library(ggplot2)
+```
+
+
+### Establishing Database Connection (RDMBS: Postgres)
+
+* Establish the Postgres database connection with PostgreSQL Driver and proper connection strings:
+
++ user id (*user*)
++ password 
++ host
++ port number (*port*) 
++ database name (*dbname*)
+
+At the end, we will do a check to make sure the database objects (ratings, movies, reviews) exists. 
+
+STEP 1: Load Movie_Rankings.sql into R dataframe
+
+
+```{r Step1}
+
+
+# create a keyring 
+
+keyring::key_set(service = "postgres", 
+                 username = "postgres")
+
+# keyring::key_list("postgres")[1,2]
+
+# create a connection
+# save the password that we can "hide" it as best as we can by collapsing it
+# delete the following line if keyring is working
+# pw <- {
+#  "pgAdmin4"
+#}
+ 
+
+# loads the PostgreSQL driver
+drv <- dbDriver("PostgreSQL")
+# creates a connection to the postgres database
+# note that "con" will be used later in each connection to the database
+conn <- dbConnect(drv, dbname = "postgres",
+                 host = "localhost", port = 5433,
+                 user = keyring::key_list("postgres")[1,2], 
+                 password = keyring::key_get("postgres", "postgres")
+                 #password = pw
+                )
+# rm(pw) # removes the password
+
+dbListTables(conn)
+
+
+# check for the movies_survey_data
+#dbExistsTable(conn, "ratings")
+#dbExistsTable(conn, "movies")
+#dbExistsTable(conn, "reviews")
+
+# TRUE
+
+
+
+```
+
+Step 2: load the query results into data frames and join the Movie Data and Rating Data
+
+#### Movie Table
+
+```{r movies, echo=FALSE}
+df_movies <- suppressWarnings(dbSendQuery(conn, "SELECT * from movies"))
+movie_df <- fetch (df_movies)
+movie_df
+
+```
+
+#### Reviewer Table 
+
+```{r reviews}
+df_reviewers <- suppressWarnings(dbSendQuery(conn, "SELECT * from reviews"))
+reviewer_df <- fetch (df_reviewers)
+reviewer_df
+```
+
+
+
+#### Rating Table
+```{r ratings}
+df_ratings <- suppressWarnings(dbSendQuery(conn, "SELECT * from ratings"))
+rating_df <- fetch(df_ratings)
+head(rating_df,10)
+
+
+```
+
+#### Joining Movie Data and Rating Data
+
+```{r}
+movie_ratings_reviewers <- left_join(movie_df, rating_df, by.x = "movie_id", by.y = "movie_id")
+```
+
+check the combined dataframe and view the data
+
+```{r}
+movie_ratings_reviewers
+```
+
+
+STEP 3: Handling Null Values
+
+examine the severity of missing values 
+```{r missing-value-check}
+movie_ratings_reviewers %>% filter(is.na(rating))
+```
+
+Imputting missing rating values with mean rating.
+
+```{r}
+
+movie_reviewer_rating_cleaned_df <- movie_ratings_reviewers %>% mutate (
+                                                                      rating = chron::times(rating), 
+                                                                      rating = if_else(is.na(rating), mean(rating), rating)
+                                                                        )
+
+movie_reviewer_rating_cleaned_df
+
+movie_reviewer_rating_cleaned_df %>% filter(is.na(rating))
+
+
+```
+
+> results should show there is no more NA
+
+
+STEP 4: Summarize the data 
+
+```{r}
+
+movie_ratings <- movie_reviewer_rating_cleaned_df %>% group_by(movie_name) %>% summarize(movie_rating = mean(rating))  %>% arrange(desc(movie_rating))
+
+movie_ratings
+    
+
+```
+
+STEP 5: Graph Data Distribution
+
+```{r}
+
+
+
+movie_reviewer_rating_cleaned_df_2 <- left_join (movie_reviewer_rating_cleaned_df, reviewer_df, by.x="reviewer_id", by.y = "reviewer_id"  )
+movie_reviewer_rating_cleaned_df_2
+
+final_df <- movie_reviewer_rating_cleaned_df_2 %>% select(movie_name, reviewer_name, rating)
+
+# plotting a boxplot of ratings by movie name
+# Boxplot (1)
+ggplot(final_df, aes (x = movie_name, y = rating )) + geom_boxplot() 
+
+# plotting a boxplot of ratings by reviewer name
+# Boxplot (2)
+ggplot(final_df, aes (x = reviewer_name, y = rating )) + geom_boxplot() 
+
+```
+
+
+Step 6: CLOSE the db connection
+
+```{r}
+# Closing all active connections is important
+dbDisconnect(conn)
+#dbListConnections( dbDriver( drv = "PostgreSQL"))
+lapply( dbListConnections( dbDriver( drv = "PostgreSQL")), dbDisconnect)
+```
+
+
+### Conclusion 
+
+After handling the missing values present in the movie_ratings_reviewers dataset, the empirical results show that **Your Name** has the highest rating and **Rogue One: A Star Wars Story**  finished last. The boxplot (1) shows that Rogue One does have a wider spread in ratings than any other movies. 
