@@ -1,0 +1,120 @@
+---
+title: "Week 3 assignment - DATA 607"
+author: "Dennis Pong"
+date: "2/17/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+#1. Using the 173 majors listed in fivethirtyeight.com’s College Majors dataset [https://fivethirtyeight.com/features/the-economic-guide-to-picking-a-college-major/], provide code that identifies the majors that contain either "DATA" or "STATISTICS"
+
+
+```{r}
+library(httr)
+
+url  <- "https://raw.githubusercontent.com/fivethirtyeight/data/master/college-majors/majors-list.csv"
+majors <- read.csv(paste0(url), header = TRUE)
+grep(pattern = 'STATISTICS|DATA', majors$Major, value = TRUE, ignore.case = TRUE)
+
+```
+
+
+#2 Write code that transforms the data below:
+
+[1] "bell pepper"  "bilberry"     "blackberry"   "blood orange"
+
+[5] "blueberry"    "cantaloupe"   "chili pepper" "cloudberry"  
+
+[9] "elderberry"   "lime"         "lychee"       "mulberry"    
+
+[13] "olive"        "salal berry"
+
+Into a format like this:
+
+c("bell pepper", "bilberry", "blackberry", "blood orange", "blueberry", "cantaloupe", "chili pepper", "cloudberry", "elderberry", "lime", "lychee", "mulberry", "olive", "salal berry")
+
+```{r}
+
+library(stringr)
+
+startstr <- '[1] "bell pepper"  "bilberry"     "blackberry"   "blood orange"
+
+[5] "blueberry"    "cantaloupe"   "chili pepper" "cloudberry"  
+
+[9] "elderberry"   "lime"         "lychee"       "mulberry"    
+
+[13] "olive"        "salal berry"'
+
+dbl_quote = '"'
+# Use function gregexpr to extract the substring = pattern
+double_quotes_positions <- gregexpr(pattern =  dbl_quote, text = startstr)
+# check double_quotes_positions[[1]][1]
+double_quotes_positions[[1]][1]
+# print head of double_quotes positions
+head(double_quotes_positions[[1]])
+
+# store all the double_quotes positions into the vector dq_pos
+dq_pos <- vector()
+i <- 1
+while (!is.na(double_quotes_positions[[1]][i])){
+                              dq_pos[i] <- double_quotes_positions[[1]][i]
+                              i <- i+1
+}
+
+no_of_words <- length(dq_pos)/2
+desired_output <- vector (length=no_of_words)
+#print(desired_output)
+# checking the length of desired_output 
+length(desired_output)
+
+for (i in 1:no_of_words) {
+desired_output[i] <- substring(startstr,double_quotes_positions[[1]][2*i-1]+1,double_quotes_positions[[1]][2*i]-1)
+i <- i+1
+}
+
+# set the optional character to be \", \"
+# Use writeLines to complete the deal
+end_result <- paste0("c(\"", paste0(desired_output, collapse = "\", \""), "\")")
+
+
+writeLines(end_result)
+```
+
+
+
+
+
+The two exercises below are taken from R for Data Science, 14.3.5.1 in the on-line version:
+
+#3 Describe, in words, what these expressions will match:
+
+* `(.)\1\1 `- This regular expression matches a string containing the same three consecutive characters. It would match, for example, “abbbc” but not “abc”.  
+* `"(.)(.)\\2\\1"`  - This is a string representing a regular expression that matches a pair of any characters followed by the reverse order of the same pair. So, “abbbba” and “abba” are both viable matches.  
+* `(..)\1 `- This regular expression matches any two characters followed by the same sequence of two characters.  
+* `"(.).\\1.\\1"`  - five characters where the first, third and fifth are the same and the second and fourth can be anything. Possible matches could be “abaaa”, “dedad”.  
+* `"(.)(.)(.).*\\3\\2\\1"` - 6 or more carachters where the first three characters are the same as the last three in reverse order. It could be of length 7 or 6. If it's of length 7, the fourth character 
+can be anything. Possible matches could be something like “abcdcba” or “abccba”  
+
+
+#4 Construct regular expressions to match words that:
+
+* Start and end with the same character. - `"^(.).*\1$"`  
+
+* Contain a repeated pair of letters (e.g. "church" contains "ch" repeated twice.) - `".*(.?...?).*\\1"  `  
+
+* Contain one letter repeated in at least three places (e.g. "eleven" contains three "e"s.) - `"(.?[A-Za-z].?){3,}"  `  
+
+
+```{r this-matching-program-doesn\'t-work-in-some-cases, eval=FALSE, include=FALSE}
+regex_expr = '"^(.).*\1$"'
+
+test_cases = c('"11"', '"231"', '"232"', '231', '"a0a"', '"aa20"', '"a"')
+
+str_view_all(test_cases, regex_expr)
+```
+
+
