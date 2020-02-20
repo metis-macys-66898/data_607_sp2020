@@ -92,29 +92,57 @@ The two exercises below are taken from R for Data Science, 14.3.5.1 in the on-li
 
 #3 Describe, in words, what these expressions will match:
 
-* `(.)\1\1 `- This regular expression matches a string containing the same three consecutive characters. It would match, for example, “abbbc” but not “abc”.  
-* `"(.)(.)\\2\\1"`  - This is a string representing a regular expression that matches a pair of any characters followed by the reverse order of the same pair. So, “abbbba” and “abba” are both viable matches.  
-* `(..)\1 `- This regular expression matches any two characters followed by the same sequence of two characters.  
-* `"(.).\\1.\\1"`  - five characters where the first, third and fifth are the same and the second and fourth can be anything. Possible matches could be “abaaa”, “dedad”.  
-* `"(.)(.)(.).*\\3\\2\\1"` - 6 or more carachters where the first three characters are the same as the last three in reverse order. It could be of length 7 or 6. If it's of length 7, the fourth character 
-can be anything. Possible matches could be something like “abcdcba” or “abccba”  
+* `(.)\1\1 `- This regular expression matches an expression containing the same three consecutive characters. It would match, for example, abbbc, addddc work but abc doesn't.  
+* `"(.)(.)\\2\\1"`  - This is a string representing a regular expression that matches a pair of any characters followed by the reverse order of the same pair. So the first matching group is (.). Second matching group is (.).  
+Meaning 1st character and 2nd character of the string can be any characters. \\2 matches the same text as most recently matched by 2nd matching group. Likewise, \\1 matches the same text as the 1st matching group. Possible 
+matches are "abba", "0110", "....". The requirement is the strong has to be exactly of length 4. The matching string has to be enclosed in double quotes.
+* `(..)\1 `- This regular expression matches any two characters followed by the same sequence of the same two characters. Possible matches are 1010, ababb, eabbabab. The matched expression doesn't neccessarily have to be a 
+string.
+* `"(.).\\1.\\1"`  - five characters where the first, third and fifth are the same and the second and fourth can be anything. Possible matches could be “abaaa”, “dedad”. Has to be enclosed in "" and anything of length not 
+equal to 5 is going to fail. E.g. "a0a1af"
+* `"(.)(.)(.).*\\3\\2\\1"` - 6 or more carachters where the first three characters are the same as the last three in reverse order. It could be of length 7+ or 6. If it's of length 7+, the middele string of characters can 
+be anything. Possible matches could be something like "ereere", "ere3ere", and "ere4443ere". Has to be character string.
 
 
 #4 Construct regular expressions to match words that:
 
-* Start and end with the same character. - `"^(.).*\1$"`  
+* Start and end with the same character. - `^(.).*\1$`  
 
-* Contain a repeated pair of letters (e.g. "church" contains "ch" repeated twice.) - `".*(.?...?).*\\1"  `  
+* Contain a repeated pair of letters (e.g. "church" contains "ch" repeated twice.) - `([a-zA-Z][a-zA-Z]).*\1  `  
 
-* Contain one letter repeated in at least three places (e.g. "eleven" contains three "e"s.) - `"(.?[A-Za-z].?){3,}"  `  
+* Contain one letter repeated in at least three places (e.g. "eleven" contains three "e"s.) - `([a-zA-Z]).*\1.*\1  `  
 
 
-```{r this-matching-program-doesn\'t-work-in-some-cases, eval=FALSE, include=FALSE}
-regex_expr = '"^(.).*\1$"'
+```{r , eval=FALSE, include=FALSE}
+# this is an example where the following testing construct would not work because R compiler doesn't take ^ and $ where my online
+# tool (https://regex101.com/r/dX3hD4/1) works fine
+regex_expr = '^(.).*\1$'
 
-test_cases = c('"11"', '"231"', '"232"', '231', '"a0a"', '"aa20"', '"a"')
+test_cases = c('"anna"',
+"abbba",
+"1df1",
+"1.1",
+"a",
+"1..",
+"3232",
+"1aa1")
 
 str_view_all(test_cases, regex_expr)
 ```
 
+
+```{r eval=FALSE, include=FALSE}
+regex_expr = '([a-zA-Z]).*\\1.*\\1'
+
+test_cases = c('aaa',
+"aeleven",
+"el3edven",
+"3323",
+"elev3",
+"aeae3"
+)
+
+str_view_all(test_cases, regex_expr)
+
+```
 
