@@ -98,10 +98,10 @@ Meaning 1st character and 2nd character of the string can be any characters. \\2
 matches are "abba", "0110", "....". The requirement is the strong has to be exactly of length 4. The matching string has to be enclosed in double quotes.
 * `(..)\1 `- This regular expression matches any two characters followed by the same sequence of the same two characters. Possible matches are 1010, ababb, eabbabab. The matched expression doesn't neccessarily have to be a 
 string.
-* `"(.).\\1.\\1"`  - five characters where the first, third and fifth are the same and the second and fourth can be anything. Possible matches could be “abaaa”, “dedad”. Has to be enclosed in "" and anything of length not 
-equal to 5 is going to fail. E.g. "a0a1af"
-* `"(.)(.)(.).*\\3\\2\\1"` - 6 or more carachters where the first three characters are the same as the last three in reverse order. It could be of length 7+ or 6. If it's of length 7+, the middele string of characters can 
-be anything. Possible matches could be something like "ereere", "ere3ere", and "ere4443ere". Has to be character string.
+* `"(.).\\1.\\1"`  - It matches an expression that contains five characters where the first, third and fifth are the same and the second and fourth can be anything. Possible matches could be “abaaa”, “dedad”. Has to be enclosed 
+in "" and anything of length not equal to 5 is going to fail. E.g. "a0a1af"
+* `"(.)(.)(.).*\\3\\2\\1"` - It matches an exprssion that is 6 or more carachters where the first three characters of the 6 characters are the same as the last three in reverse order. It could be of length 7+ or 6. If it's of 
+length 7+, the middele string of characters can be anything. Possible matches could be something like "ereere", "1ere3ere", and "ere4443ere". Has to be a string that is enclosed within a pair of ".
 
 
 #4 Construct regular expressions to match words that:
