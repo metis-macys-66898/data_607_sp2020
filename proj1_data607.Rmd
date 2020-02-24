@@ -1,0 +1,215 @@
+---
+title: "Dennis Pong - Project1_D607"
+author: "Dennis Pong"
+date: "2/22/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r laoding-libraries}
+library(dplyr)
+library(stringr)
+library(tidyr)
+
+```
+
+
+
+## Loading of the tournamentinfo text file
+
+
+```{r loading-tourney-data}
+
+data<-readLines('https://raw.githubusercontent.com/metis-macys-66898/data_607_sp2020/master/tournamentinfo.txt', warn = 'F')
+
+
+data<-data[data != strrep("-", 90-1)]
+
+#head(data)
+#length(data)
+
+data<-data[3:130]
+head(data)
+
+```
+
+## The way that we're set up is we started to import the text file using readLines as a character vector. Then I'm going to use regexp to parse it into individual character vectors which are the variables that we can use to construct a final dataframe. 
+
+
+```{r}
+
+
+# Capturing names like CAMERON WILLIAM MC LEMAN and SEAN M MC CORMICK
+# assuming the name could max out the field length allowed, I do not expect a space to be matched in the end for 2-word, 3-word, 4-word names. 
+
+name_regex<-"[0-9] \\| [a-zA-Z]+\\s[a-zA-Z]+\\s?([a-zA-Z]+\\s?)*[a-zA-Z]*"
+# removing the leading and trailing space along with the leading non-named related string that I wanted to remove
+name<- trimws(str_remove_all(unlist(str_extract_all(data, name_regex)), "\\d\\s\\|"))
+name
+
+
+
+state_regex<-"\\s{2}[A-Z]{2}"
+states<-unlist(str_extract_all(data, state_regex))
+states
+
+
+points_regex<-"\\d\\.\\d"
+points<-unlist(str_extract_all(data, points_regex))
+points
+
+
+
+pre_rating_regex<-"R:\\s+[0-9]{3,}"
+pre_rating<-str_remove_all(unlist(str_extract_all(data, pre_rating_regex)), "R:\\s")
+pre_rating
+
+
+uscf_regex<-"[0-9]{8}"
+USCF_ID<-unlist(str_extract_all(data, uscf_regex))
+USCF_ID
+# length(uscf_id)
+
+
+# this will match anything that is W, L, or D, but only exclude other types from the two ends of the bar (|)
+games_regex<-"\\|[W|L|D].+[0-9]{1,2}\\|"
+# Having this games_regex_removed ensures we do not take in any B, H, or U
+games_regex_removed <- "\\|[^(W|L|D)]\\s{4}"
+games<- unlist(str_extract_all(data, games_regex))
+games<-str_remove_all(games, games_regex_removed)
+# str_extract_all with simplify defaulted to F gives us a list of character vectors, which can then be unlisted to collapse to 64 elements
+games<-strsplit(unlist(str_extract_all(data, games_regex)), "\\|")
+# after splitting on string literal bar (|), we should end with 64 elements in the list
+length(games)
+
+# creating the list of games for all 64 players
+for (i in 1:length(games)){
+  games[[i]]<-games[[i]][2:length(games[[i]])]
+
+}
+
+
+
+
+```
+
+
+## To answer the question for getting the average of the Pre Chess Rating of Opponents for players 1 and 37 in the Intro YouTube video, we create a function to get the opponent_scores needed to create the data frame for the final output. Need to use extra caution here as most of the variables are defaulted to factors. I need to explicitly change it back to chracter, numeric, or integers. Note that while writeLines has its merits, I do think read.csv is another standard approach where you can set stringsAsFactors = F to take care of the Factors issues. 
+
+
+```{r attempt1}
+
+opponent_score <- function(game_num) {
+  game_outcome <- rep(NA,64)
+  game_opponent_rank <- rep(NA, 64)
+  
+for (i in 1:length(games)){
+    # this pulls out the 1-character W, L, D 
+    game_outcome[i]<-str_extract(games[[i]][game_num],"[A-Za-z]{1}") 
+    # This gives me the opponent rank of a given game i
+    game_opponent_rank[i]<-str_extract(games[[i]][game_num],"[0-9]{1,2}")
+    
+}
+  result <- list(game_outcome, game_opponent_rank)
+  return (result)
+}
+
+#opponent_score(1)[[2]]
+
+df <- data.frame(USCF_ID, 
+                 name, 
+                 states,
+                 points, 
+                 pre_rating, 
+                 opponent_score(1)[[2]], 
+                 opponent_score(2)[[2]],
+                 opponent_score(3)[[2]], 
+                 opponent_score(4)[[2]],
+                 opponent_score(5)[[2]], 
+                 opponent_score(6)[[2]],
+                 opponent_score(7)[[2]]
+                )
+#df
+#head(df,2)
+#Renaming opponent_score for the 7 columns 
+names(df) <- c("USCF_ID", "name", "states", "points", "pre_rating", "opp_rating_1", "opp_rating_2", "opp_rating_3", "opp_rating_4", "opp_rating_5", "opp_rating_6", "opp_rating_7")
+names(df)
+
+#str(df)
+# points scored needed to be in numeric 
+df$points<-as.numeric(as.character(df$points))
+# USCF_ID along with all the opponent scores, and pre_Ratings are supposed to be all integers
+cols <- c(names(df[, 5:12]), "USCF_ID")
+df[,cols] <- apply(df[,cols], 2, function(x) as.integer(as.character(x)))
+
+#str(df)
+#df
+
+char_cols <- c("name", "states")
+df[,char_cols] <- apply(df[,char_cols], 2, function(x) as.character(x))
+
+#col_names <- names(df[,6:12])
+opp_ratings<- c('opp_rating_1', 'opp_rating_2', 'opp_rating_3', 'opp_rating_4', 'opp_rating_5', 'opp_rating_6', 'opp_rating_7')
+
+populate_opp_scores <- function (df, cols){
+for (j in opp_ratings) {
+  for (i in 1:nrow(df)){
+    df[[j]][i]<- df$pre_rating[df[[j]][i]]
+  }
+  
+}
+  return (df)
+}
+
+
+
+df<- populate_opp_scores(df, opp_ratings)
+#df
+#df[37,]
+
+# calculating row-level means using rowMeans
+df$average_opponent_rating <- rowMeans(df[,opp_ratings], na.rm = T)
+
+#df
+# Do not need to use group_by if the dataset is large. 
+final_df <- select( df, -USCF_ID, -all_of(opp_ratings) ) %>% group_by(name, states, points, pre_rating) %>%  arrange(desc(average_opponent_rating))
+
+final_df
+
+
+
+#head(final_df) 
+
+
+```
+
+## Writing out the file to csv to complete the task 
+
+```{r write-out-to-csv}
+
+
+write.csv(final_df, "project_1_DataFrame_DP.csv")
+cur_dir<-getwd()
+list.files(cur_dir)
+
+```
+## Bonus Track:
+### Furthermore, I'd like to examine the tournament results by comparing the average_opponent_rating and pre_rating (pre-tournament rating) and see if there is an origin that has a bigger difference than the others. It turns out there are only 3 states, missouri (MI), Ohio (OH), and Ontario, Canada (ON) that we have data for. OH has only 1 count of non-NA. I'm going to exclude it from comparison. It turns out that ON has a higher net tournament results, defined by pre-tournament rating minus average opponent rating. 
+
+
+```{r}
+
+final_df2<-final_df
+final_df2$tournament_results <- final_df$pre_rating - final_df$average_opponent_rating
+#final_df2
+
+
+boxplot( tournament_results ~ states, data = final_df2)
+
+#str(final_df2)
+final_df2 %>%  group_by(states) %>% summarize(counts  = n(), na.rm = T)
+```
+
