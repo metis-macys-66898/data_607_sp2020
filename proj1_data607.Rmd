@@ -18,7 +18,7 @@ library(tidyr)
 
 
 
-## Loading of the tournamentinfo text file
+#### Loading of the tournamentinfo text file
 
 
 ```{r loading-tourney-data}
@@ -36,7 +36,7 @@ head(data)
 
 ```
 
-## The way that we're set up is we started to import the text file using readLines as a character vector. Then I'm going to use regexp to parse it into individual character vectors which are the variables that we can use to construct a final dataframe. 
+#### The way that we're set up is we started to import the text file using readLines as a character vector. Then I'm going to use regexp to parse it into individual character vectors which are the variables that we can use to construct a final dataframe. 
 
 
 ```{r}
@@ -97,7 +97,7 @@ for (i in 1:length(games)){
 ```
 
 
-## To answer the question for getting the average of the Pre Chess Rating of Opponents for players 1 and 37 in the Intro YouTube video, we create a function to get the opponent_scores needed to create the data frame for the final output. Need to use extra caution here as most of the variables are defaulted to factors. I need to explicitly change it back to chracter, numeric, or integers. Note that while writeLines has its merits, I do think read.csv is another standard approach where you can set stringsAsFactors = F to take care of the Factors issues. 
+#### To answer the question for getting the average of the Pre Chess Rating of Opponents for players 1 and 37 in the Intro YouTube video, we create a function to get the opponent_scores needed to create the data frame for the final output. Need to use extra caution here as most of the variables are defaulted to factors. I need to explicitly change it back to chracter, numeric, or integers. Note that while writeLines has its merits, I do think read.csv is another standard approach where you can set stringsAsFactors = F to take care of the Factors issues. The key here is to replace the output of opponent_score, i.e. game_opponent_rank (denoted as a 1-to-2-digit string), with the pre_rating of the opponents using the right lookup mechanisms that can be achieved with for loops and basic dataframe operations. populate_opp_scores is the function that gets that job done.
 
 
 ```{r attempt1}
@@ -186,7 +186,7 @@ final_df
 
 ```
 
-## Writing out the file to csv to complete the task 
+#### Writing out the file to csv to complete the task 
 
 ```{r write-out-to-csv}
 
@@ -196,8 +196,9 @@ cur_dir<-getwd()
 list.files(cur_dir)
 
 ```
-## Bonus Track:
-### Furthermore, I'd like to examine the tournament results by comparing the average_opponent_rating and pre_rating (pre-tournament rating) and see if there is an origin that has a bigger difference than the others. It turns out there are only 3 states, missouri (MI), Ohio (OH), and Ontario, Canada (ON) that we have data for. OH has only 1 count of non-NA. I'm going to exclude it from comparison. It turns out that ON has a higher net tournament results, defined by pre-tournament rating minus average opponent rating. 
+
+### Bonus Track:
+#### Furthermore, I'd like to examine the tournament results by comparing the average_opponent_rating and pre_rating (pre-tournament rating) and see if there is an origin that has a bigger difference than the others. It turns out there are only 3 states, missouri (MI), Ohio (OH), and Ontario, Canada (ON) that we have data for. OH has only 1 count of non-NA. I'm going to exclude it from comparison. It turns out that ON has a higher net tournament results, defined by pre-tournament rating minus average opponent rating. 
 
 
 ```{r}
