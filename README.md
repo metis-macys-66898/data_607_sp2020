@@ -18,8 +18,8 @@ submission 2| DENNIS_PONG-hw3_v2.Rmd
 
 # proj 1
 
-Submssion #  | R Mark Down file name
------------- | --------------------------------------
-submission 1a| proj1_data607.rmd
-submission 1b| project_1_DataFrame_DP.csv
+Submssion #  | R Mark Down file name | other output files 
+------------ | -------------------------------------- |--------------------------------------
+submission 1a| proj1_data607.rmd||
+submission 1b| | project_1_DataFrame_DP.csv|
 ----------------------------------------------------
