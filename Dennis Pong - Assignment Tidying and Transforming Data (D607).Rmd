@@ -1,0 +1,122 @@
+---
+title: "Denns Pong - Assignment Tidying and Transforming Data (D607)"
+author: "Dennis Pong"
+date: "3/3/2020"
+output: html_document
+---
+
+
+### Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library('stringr')
+library('tidyr')
+library('dplyr')
+library('knitr') # there is a function kable that is very useful
+library('ggplot2')
+```
+
+
+
+
+### Importing data into the R environment.
+
+```{r}
+
+arrival_stats <- readr::read_csv("https://raw.githubusercontent.com/metis-macys-66898/data_607_sp2020/master/arrival_stats.csv")
+arrival_stats
+
+
+#class(arrival_stats)
+kable(arrival_stats, format = 'markdown')
+```
+
+
+
+### Tidying and Transforming the data
+
+I renamed the variables X1, X2 to Carrier and FlightStatus respectively. Removed an empty record at row 3. Populated Carrier for empty rows using the fill method from tidyr. Transforming the data.frame to a longer form by using pivot_longer. End resultant dataframe is called arrival_stats_transformed.
+```{r creation-of-arrival_stats_transformed}
+
+arrival_stats <- arrival_stats %>% rename(Carrier = X1, FlightStatus = X2) %>% filter(!is.na(FlightStatus)) 
+
+ #.direction = "down" (default)
+arrival_stats <- tidyr::fill(arrival_stats, Carrier)
+
+arrival_stats_transformed <- arrival_stats %>% pivot_longer(cols = c(-Carrier, -FlightStatus), names_to = "destination", values_to = "arrivals")
+arrival_stats_transformed
+```
+
+
+
+
+```{r}
+summary_df <- arrival_stats_transformed %>% group_by (Carrier, FlightStatus) %>% summarize_at ('arrivals', sum)
+summary_df
+```
+
+### Analysis 
+
+#### Here is a data table where it shows the proportion of delays by airline carrier
+
+```{r calculating-the-percentages-of-delay-by-airline}
+# since filter is a 2 argument function, we use .x and .y (https://community.rstudio.com/t/function-argument-naming-conventions-x-vs-x/7764)
+# setNames() -  sets the names on an object and returns the object
+airline_names <- unique(arrival_stats_transformed$Carrier)
+airline_totals <- purrr::map_dbl(airline_names, ~ sum(filter(arrival_stats_transformed, Carrier == .x)[['arrivals']])) %>% setNames(airline_names)
+airline_totals
+
+# the following will create a column called proportion where it is defined by arrivals divided by the total of the carrier from airline_totals 
+summary_df <- summary_df %>% mutate(proportion = arrivals / airline_totals[Carrier])
+summary_df
+```
+
+#### Visualizing the proportion of delays by airline carrier
+
+```{r}
+plt1 <- ggplot(data=summary_df, aes(x=Carrier, y=proportion, fill=Carrier)) + geom_bar(stat='identity', position="dodge") + ggtitle("Visualizing Proprotion of Delays between the 2 Carriers") + ylab("% of Delayed Flights")
+
+plt1
+
+
+
+```
+
+##### The visualization showed us that Alaska has a slightly lower % of delayed flights. If all other variables are held equal, this could be a defining metric that can fairly evaluate the quality of service in terms of alleviating the chances of having a delayed flight. Alaska, in this context, outperformed its rival American West, or AM WEST.
+
+
+
+```{r define-summary-df1}
+
+summary_df1 <- arrival_stats_transformed %>% group_by (destination, FlightStatus) %>% summarize_at ('arrivals', sum)
+summary_df1
+
+```
+
+#### Below shows the data table of the proportion of delays by airport (destination)
+
+```{r calculating-the-percentages-of-delay-by-airport}
+
+airport_names <- unique(arrival_stats_transformed$destination)
+
+airport_totals <- purrr::map_dbl(airport_names, ~ sum(filter(arrival_stats_transformed, destination == .x)[['arrivals']])) %>% setNames(airport_names)
+airport_totals
+
+# the following will create a column called proportion where it is defined by arrivals divided by the total of each destination from airport_totals 
+summary_df1 <- summary_df1 %>% mutate(proportion = arrivals / airport_totals[destination])
+summary_df1
+```
+
+#### Visualizing the proportion of delays among airports
+
+```{r}
+plt2 <- ggplot(data=summary_df1, aes(x=destination, y=proportion, fill=FlightStatus)) + geom_bar(stat='identity', position="dodge") + ggtitle("Visualizing Proprotion of Delays across Airports") + ylab("% of Delayed Flights")
+
+plt2
+
+```
+
+### Conclusion
+
+##### Final comments here is realizing that Seattle and San Francisco have the highest % of delayed flights tell me that it is not fair to judge the airport by 1 single metric. There are definitely some variabbles that would contribute to this very metric (% of delay flight). For example, # of airlines that are located in the airport, # of active gates available, number of air way traffic channels available for a given airport, weather conditions. The list goes on. But one thing that is certain is the chance of getting a delayed flight from San Francisco and Seattle are, on average, the highest. The other subjective observation is flying Alaska is **less** probable to encounter a delay than Am West.
