@@ -29,3 +29,13 @@ Submssion # | R Mark Down file name
 ------------| --------------------------------------
 Submission 1| Dennis Pong - Assignment Tidying and Transforming Data (D607).Rmd
 ----------------------------------------------------
+
+
+
+# hw 5
+Submssion # | R Mark Down file name
+------------| --------------------------------------
+Submission 1| Dennis Pong - Week 7 Assignment.Rmd
+----------------------------------------------------
+
+
