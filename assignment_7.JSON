@@ -4,7 +4,7 @@
 			"author": ["Andrew Yang"],
 			"ISBN-13": "978-0316414210",
 			"pages": 304,
-			"Date_Published": "April 2, 2019"
+			"Date_of_Published": "April 2, 2019"
 			
 		},
 		{
@@ -12,14 +12,14 @@
 			"author": ["Laszlo Bock"],
 			"ISBN-13": "978-1455554799",
 			"pages": 416, 
-			"Date_Published": "April 7, 2015"
+			"Date_of_Published": "April 7, 2015"
 		},
 		{
 			"title": "Data Science in R: A Case Studies Approach to Computational Reasoning and Problem Solving (Chapman & Hall/CRC The R Series)",
 			"author": ["Deborah Nolan, Duncan Temple Lang"],
 			"ISBN-13": "978-1482234817",
 			"pages": 539, 
-			"Date_Published": "April 21, 2015"
+			"Date_of_Published": "April 21, 2015"
 		}
 	]
 }
