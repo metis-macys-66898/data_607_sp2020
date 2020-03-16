@@ -1,0 +1,79 @@
+---
+title: "Week 7 Assignment - Working with XML and JSON in R (D607)"
+author: "Dennis Pong"
+date: "3/15/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Loading the required libraries
+```{r loading-packages}
+#install.packages("XML")
+require(XML)
+library(RCurl)
+library(XML)
+library(jsonlite)
+library(dplyr)
+library(knitr)
+```
+
+
+#### loading from HTML
+```{r html-to-kable-output}
+# loading from HTML
+html_url = "https://raw.githubusercontent.com/metis-macys-66898/data_607_sp2020/master/assignment_7.html"
+html_url
+html_books = readHTMLTable(getURLContent(html_url))[[1]]
+kable(html_books)
+
+```
+
+#### loading from XML
+```{r xml-to-kable-output}
+# make sure xml file is ridded of any special characters in XML like ampersand (&) and apostrophe (')
+
+xml_url = "https://raw.githubusercontent.com/metis-macys-66898/data_607_sp2020/master/assignment_7.xml"
+xml_url
+xml_books = xmlToDataFrame(xmlParse(getURLContent(xml_url)))
+kable(xml_books)
+
+```
+
+#### loading from JSON
+```{r json-to-kable-output}
+# the characteristics with JSON is even with filename is case sensitive
+
+json_url = "https://raw.githubusercontent.com/metis-macys-66898/data_607_sp2020/master/assignment_7.JSON"
+json_url
+json_books = fromJSON(json_url)[[1]]
+kable(json_books)
+
+```
+
+#### Checking to see if HTML and XML has any content differences in the two data.frames
+
+```{r compare-html-with-xml}
+all_equal(html_books, xml_books)
+
+```
+
+#### Checking to see if HTML and JSON has any content differences in the two data.frames
+
+```{r compare-html-with-json}
+all_equal(html_books, json_books)
+
+```
+
+It's obvious that JSON preserves the data types to its original datatypes while HTML / XML would automatically convert all character vectors into factors. Skipping the check between JSON and XML as XML is the same as HTML.
+
+
+
+
+### Conclusions 
+
+a) No content differences among all 3 source files.  
+
+b) No Surprise here. When we wanted to preserve the original datatypes, we should always default to JSON as it doesn't automatically coerce the character vectors into factors. XML and HTML are mostly the same and mutually compatible in the way the data structure. Each one has its advantage. It seems HTML is more standardized up front but it doesn't pan out well if you have a very lengthy hierarchy where you have to scroll all the way to the beginning for the definitions of the header info. XML displays a more modern type of structuring table of information where each book is an independent block or unit of codes.
