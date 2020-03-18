@@ -6,5 +6,5 @@ https://selectorgadget.com
 ------------------------------------------------------ 
 Filename  | description
 --------------------------- | --------------------------- 
-[Fill in the file name here] | [put a brief description of the file and what it does]
+Project3_03172020_DP.rmd | v1 of my code that does analysis part 1a
 ------------------------------------------------------ 
