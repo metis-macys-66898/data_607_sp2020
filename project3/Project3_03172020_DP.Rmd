@@ -1,0 +1,333 @@
+---
+title: "Project 3 ver2"
+author: "Subhalaxmi Rout"
+date: "3/11/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages("rvest")
+#install.packages("xml2")
+#install.packages("tidyverse")
+#install.packages("stringr")
+#install.packages("dplyr")
+#install.packages("DT")
+```
+
+```{r}
+library(tidyverse)
+library(rvest)
+library(xml2)
+library(stringr)
+library(dplyr)
+library(DT)
+```
+
+```{r}
+  scraper_func <- function(url) {
+  job_title <- page %>% 
+  rvest::html_nodes(".jobtitle") %>%
+  rvest::html_attr("title")
+  location <- page %>%
+  rvest::html_nodes(".location") %>%
+  rvest::html_text()
+  company_name <- page %>% rvest::html_nodes(".company") %>%
+  rvest::html_text() %>%
+  stringi::stri_trim_both()  
+  links <- page %>% 
+  rvest::html_nodes('[data-tn-element="jobTitle"]') %>%
+  rvest::html_attr("href")
+  job_desc <- c()
+  for (link in links) {
+    url <- paste0("https://www.indeed.com/", link)
+    page <- xml2::read_html(url) %>% html_node("#jobDescriptionText") %>%
+      html_text() %>%
+        stringi::stri_trim_both()
+    job_desc <- c(job_desc, page)
+  }
+  df <- data.frame(job_title, location, company_name, job_desc)
+  return(df)
+  }
+pages <- seq(from = 0, to = 990, by = 10 )
+ds_df <- data.frame()
+url <- "https://www.indeed.com/jobs?q=data+scientist&l=USA"
+page <- xml2::read_html(url)
+for (i in pages) {
+  if (i == 0) {
+    page <- xml2::read_html(url)
+    Sys.sleep(3)
+    df <- scraper_func(page)
+    ds_df <- rbind(ds_df, df)
+  } else {
+    url_next <- paste0(url, "&start=", i)
+    page <- xml2::read_html(url)
+    Sys.sleep(3)
+    df <- scraper_func(page)
+    ds_df <- rbind(ds_df, df)
+  }
+  }
+ds_df
+```
+
+
+```{r}
+#data cleaning
+data <- readr::read_csv("https://raw.githubusercontent.com/christianthieme/MSDS-DATA607/master/indeed_scrape.csv")
+
+#remove duplicate
+data <- unique(data)
+
+#remove row where job description is blank
+data <- data %>% filter(job_desc != "")
+
+# remove "\n" from job description
+data$job_desc <-  str_replace_all(data$job_desc, "[\r\n]" , "")
+#data$job_desc <-  gsub("\\.|\\,"," ",data$job_desc )
+#data$job_desc <-  str_replace_all(data$job_desc, "." , " ")
+
+#creat one more column with state
+location_ex <- "[A-Z]{2}"
+data <- data %>% mutate(state = str_extract(location, location_ex))
+
+#remove postal code from city
+postal_ex <- "\\w+.\\w+"
+data$location <-  str_extract(data$location, postal_ex)
+
+
+#order the data
+data <- data %>% select(job_title,location,state,company_name,job_desc)
+
+#change all the upper case letter to lower case
+data$job_desc <- tolower(data$job_desc)
+
+#view data
+data
+```
+
+```{r}
+
+tags_softskills <- c('highly motivated','curious','critical thinking', 'problem solving',  'creativity','collaboration',"enthusiastic over-achievers","interpersonal skills","analytical thinker","passionate","humble","resourceful", "work independently","driving on-time","ability to think outside-the-box","communication","communicate","solve the business problem","decision-making"
+)
+tags_softskills <- tolower(tags_softskills)
+
+#Extract keywords from "description" column and create new column with keywords 
+tag_ex <- paste0('(', paste(tags_softskills, collapse = '|'), ')')
+data <- data %>%
+mutate(soft_skills = sapply(str_extract_all(job_desc, tag_ex), function(x) paste(x, collapse=',')))
+
+unique(tags_softskills)
+```
+
+
+
+
+
+
+```{r}
+tags_technicalskills <- c("analytic solutions","machine learning","predictive modeling","database systems","clinical decision engines", "algorithms", "NLP/ML", "SQL",  "MongoDB","DynamoDB", "R, ","Python","dplyr","GGPlot", "Pandas","OLS","MLE","Machine Learning",  "Decision Tree/Random Forest","AI" , "Visualization","A/B tests set-up","Reporting","analysis",  "data visualizations","numpy", "scipy","scikit-learn", "tensorflow","pytorch" , "keras","genism", "vowpal wabbit","Heap.io","Google Analytics","Big Data","Business Analytics","Oracle","Relational Database Management System (RDMS)","Statistical Programming Language","Regression","Decision Trees","K-Means","Tableau","looker","R Programming" ,"Microsoft Office" , "SPSS","No-SQL", "Cassandra","Hadoop", "Pig","Hive", "HPCC Systems","Javascript" , "Java programming","PowerBI","Linux","TensorFlow", "Keras","Shiny","Artificial Intelligence","NLP", "Tesseract","Jenkins CI/CD", "Azure","logistic regression","k-means clustering","decision forests", "JavaScript","Cloud data", "MATLAB","Excel", "Jupyter","Gurobi","agile", "Git","Github" ,"SNR signals", "Qlikview","Business Intelligence", "supply chain","D3", "big data",'business sense','C Programming','group API', 'Get Requests', 'Push Requests', 'Update Requests','AWS', 'Sagemaker','Power BI','Cognos', 'Business Objects','Amplitude','Mixpanel','Salesforce', 'Qlik','Microstrategy', 'java, ')
+
+tags_technicalskills <- tolower(tags_technicalskills)
+tags_technicalskills
+
+#Extract keywords from "description" column and create new column with keywords
+tag_ex <- paste0('(', paste(tags_technicalskills, collapse = '|'), ')')
+
+data <- data %>%
+mutate(hard_skills = sapply(str_extract_all(job_desc, tag_ex), function(x) paste(x, collapse=',')))
+data <- data %>% select (job_title,location,state,company_name,job_desc,hard_skills,soft_skills)
+#unique(tags_technicalskills)
+```
+
+```{r}
+library(dplyr)
+#tags_salary <- "(\\$?[0-9]{2,3},?[0-9]{3}\\.?([0-9]{2})?[ \\/to-]{3,4}\\$?[0-9]{2,3},?[0-9]{3}\\.?([0-9]{2})?)|([0-9]{2,3},?[0-9]{3})[:space:].\\/"
+
+tags_salary_lower <- "\\$[0-9]{2,},?[0-9]{3}\\.?([0-9]{2})|(\\$[0-9]{2,3},?[0-9]{3})"
+tags_salary_upper <- "([\\/to-]\\s\\$[0-9]{2,},?[0-9]{3}\\.?([0-9]{2}))|([\\/to-]\\s\\$[0-9]{2,},?[0-9]{3})"
+
+
+#data <- data %>% mutate(salary = str_extract(job_desc, tags_salary))
+data <- data %>% mutate(salary_lower_range = str_extract(job_desc, tags_salary_lower))
+data <- data %>% mutate(salary_higher_range = str_extract(job_desc, tags_salary_upper))
+data$salary_lower_range <- gsub("\\$|,", "", data$salary_lower_range)
+data$salary_higher_range <- gsub("\\$|,|o|-|/", "", data$salary_higher_range)
+
+# change character to integer
+makenumcols<-function(data)
+  {
+  data<-as.data.frame(data) # stored in a data frame
+  
+  data[] <- lapply(data, as.character) # check for character type
+  
+  cond <- apply(data, 2, function(x) { # condition for numeric, if numeric value True or else False
+    x <- x[!is.na(x)]
+    all(suppressWarnings(!is.na(as.numeric(x))))
+  })
+  # the columns have numeric data
+  numeric_cols <- names(data)[cond]
+  data[,numeric_cols] <- sapply(data[,numeric_cols], as.numeric)
+  #return the data desired format
+  return(data)
+}
+data <- makenumcols(data)
+#data <-  data %>% filter(!is.na(salary_lower_range))
+#data <- select(data, -c(technical_skills,technical_skills_2,hard_skills_2))
+head(data,5)
+```
+
+```{r}
+library(stringr)
+
+# remove duplicate hard skills
+data$hard_skills_2  <- sapply(strsplit(data$hard_skills, ","), function(x) paste(unique(x), collapse = ","))
+
+#unique(unlist(strsplit(data$hard_skills_2,",")))
+
+# remove duplicate soft skills
+data$soft_skills_2 <- sapply(strsplit(data$soft_skills, ","), function(x) paste(unique(x), collapse = ","))
+
+# arrange data
+data <- data %>% select(job_title, location, state, company_name, job_desc, hard_skills, hard_skills_2, soft_skills, soft_skills_2, salary_lower_range, salary_higher_range)
+
+# view data
+head(data,30)
+
+```
+
+
+
+```{r}
+# replace "r," to r and c, to c and java, to java
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "r, ", replacement = "r", fixed = TRUE))
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "c, ", replacement = "c", fixed = TRUE))
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "java, ", replacement = "java", fixed = TRUE))
+
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "r programming", replacement = "r", fixed = TRUE))
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "c programming", replacement = "c", fixed = TRUE))
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "java programming", replacement = "java", fixed = TRUE))
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "artificial intelligence", replacement = "ai", fixed = TRUE))
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "nlp/ml", replacement = "nlp", fixed = TRUE))
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "decision tree/random forest", replacement = "decision trees", fixed = TRUE))
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "random forest", replacement = "decision trees", fixed = TRUE))
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "data visualizations", replacement = "visualizations", fixed = TRUE))
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "k-means clustering", replacement = "k-means", fixed = TRUE))
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "microsoft office", replacement = "excel", fixed = TRUE))
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "sagemaker", replacement = "aws", fixed = TRUE))
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "heap.io", replacement = "heap", fixed = TRUE))
+
+# get unique value
+data$hard_skills_2 <- sapply(strsplit(data$hard_skills_2, ","), function(x) paste(unique(x), collapse = ","))
+
+# view data
+head(data, 40)
+#unique(unlist(strsplit(unique(data$hard_skills_2),",")))
+```
+
+
+
+
+```{r groupings-creation}
+require(rJava)
+#library(qdap)
+library(rJava)
+
+str(data)
+head(data$hard_skills_2,1)
+
+
+# Hardskills Section 
+HS1 <- tolower(c("database systems", "clinical decision engines", "MongoDB", "DynamoDB","Big Data", "Oracle", "Relational Database Management System (RDMS)", "No-SQL", "Cassandra", "Hadoop", "HPCC Systems", "Linux"))
+HS2 <- tolower(c("PowerBI", "Business Intelligence", "Cognos", "Business Objects", "Salesforce", "Microstrategy"))
+HS3 <- tolower(c("API"))
+HS4 <- tolower(c("supply chain", "business sense", "business knowledge"))
+HS5 <- tolower(c("predictive modeling", "R Programming", "MLE", "Decision Tree/Random Forest", "A/B tests set-up", "genism", "Statistical Programming Language", "Regression", "Decision Trees", "K-Means", "SPSS", "logistic regression"))
+HS6 <- tolower(c("machine learning","NLP/ML", "AI", "tensorflow", "pytorch", "keras","Vowpal Wabbit", "python-Tesseract"))
+HS7 <- tolower(c("SQL", "Python", "scipy", "Pig", "Hive"))
+HS8 <- tolower(c("analytic solutions", "dplyr", "Pandas", "OLS", "Reporting", "analysis", "Business Analytics", "Microsoft Office", "Shiny", "Jupyter"))
+HS9 <- tolower(c("algorithms", "numpy", "scikit-learn", "Java", "MATLAB", "Gurobi"))
+HS10 <- tolower(c("GGPlot", "Visualization", "Tableau", "looker", "Qlikview", "D3"))
+HS11 <- tolower(c("Heap.io", "Amplitude"))
+HS12 <- tolower(c("Google Analytics", "Javascript"))
+HS13 <- tolower(c("Jenkins CI/CD", "Git", "Github"))
+HS14 <- tolower(c("Azure", "Cloud data", "AWS", "Sagemaker"))
+HS15 <- tolower(c("agile"))
+
+data$hard_skill_groupings <- qdap::multigsub(HS1, "Data Modeling and DB Systems", data$hard_skills_2) 
+data$hard_skill_groupings <- qdap::multigsub(HS2, "Business Intelligence", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS3, "API", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS4, "Business Understanding", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS5, "Statistics and Advanced Data Mining", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS6, "AI/ML", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS7, "Scripting Languages", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS8, "Business Analytics & Reporting", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS9, "Algorithms", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS10, "Visualizations", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS11, "Product Analytics", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS12, "Web Analytics", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS13, "Opensource Management Systems & Automations", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS14, "Cloud Computing", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS15, "Agile", data$hard_skill_groupings)
+
+
+# checking hard_skills_2 vs hard_skill_groupings 
+data %>% select  (one_of(c("hard_skills_2", "hard_skill_groupings"))) %>% head(4)
+
+data$hard_skill_groupings_2 <- sapply (strsplit(data$hard_skill_groupings, ","), function(x) paste(unique(x), collapse = ",") )
+
+# checking hard_skills_2 vs hard_skill_groupings_2
+data %>% select  (one_of(c("hard_skills_2", "hard_skill_groupings_2"))) %>% head(4)
+
+
+head(data$soft_skills_2,1)
+
+
+# Soft Skills Section 
+
+SS1 <- tolower(c("collaboration"))
+SS2 <- tolower(c("critical thinking", "problem solving", "analytical thinker","resourceful", "work independently", "ability to think outside-the-box", "solve the business problem"))
+SS3 <- tolower(c("creativity"))
+SS4 <- tolower(c("highly motivated", "enthusiastic over-achievers", "passionate"))
+SS5 <- tolower(c("interpersonal skills", "humble"))
+SS6 <- tolower(c("driving on-time"))
+SS7 <- tolower(c("decision-making"))
+SS8 <- tolower(c("communicate", "communication skills"))
+
+data$soft_skill_groupings <- qdap::multigsub(SS1, "Teamwork", data$soft_skills_2) 
+data$soft_skill_groupings <- qdap::multigsub(SS2, "Problem-Solving", data$soft_skill_groupings) 
+data$soft_skill_groupings <- qdap::multigsub(SS3, "Creativity", data$soft_skill_groupings) 
+data$soft_skill_groupings <- qdap::multigsub(SS4, "Work Ethic", data$soft_skill_groupings) 
+data$soft_skill_groupings <- qdap::multigsub(SS5, "Interpersonal Skills", data$soft_skill_groupings) 
+data$soft_skill_groupings <- qdap::multigsub(SS6, "Time Management", data$soft_skill_groupings) 
+data$soft_skill_groupings <- qdap::multigsub(SS7, "Leadership", data$soft_skill_groupings) 
+data$soft_skill_groupings <- qdap::multigsub(SS8, "Communication Skills", data$soft_skill_groupings) 
+
+# checking soft_skills_2 vs soft_skill_groupings 
+data %>% select  (one_of(c("soft_skills_2", "soft_skill_groupings"))) %>% head(4)
+
+data$soft_skill_groupings_2 <- sapply (strsplit(data$soft_skill_groupings, ","), function(x) paste(unique(x), collapse = ",") )
+
+# checking soft_skills_2 vs soft_skill_groupings_2
+data %>% select  (one_of(c("soft_skills_2", "soft_skill_groupings_2"))) %>% head(4)
+
+
+```
+
+
+
+
+```{r}
+#Create .csv file
+write.csv(data, file = "data.csv", row.names = FALSE)
+data <- read.csv("data.csv")
+datatable(data)
+```
+
+
+
+
