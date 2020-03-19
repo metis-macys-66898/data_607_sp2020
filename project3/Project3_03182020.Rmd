@@ -340,33 +340,89 @@ library(scales)
 barplot(prop.table(table(strsplit(paste(stringi::stri_remove_empty(data$soft_skill_groupings_2, na_empty = T), collapse = ','), ","))), beside = T, angle = 45)
 
 # trying the ggplot approach... it isn't working fully yet.
-soft_skills_final<-strsplit(paste(stringi::stri_remove_empty(data$soft_skill_groupings_2, na_empty = T), collapse = ','), ",")
-ggplot(data.frame(soft_skills_final), aes(x=soft_skills_final)) + geom_bar()
+#soft_skills_final<-strsplit(paste(stringi::stri_remove_empty(data$soft_skill_groupings_2, na_empty = T), collapse = ','), ",")
+#ggplot(data.frame(soft_skills_final), aes(x=soft_skills_final)) + geom_bar()
 
 
+count_table <- table(strsplit(paste(stringi::stri_remove_empty(data$soft_skill_groupings_2, na_empty = T), collapse = ','), ","))
+count_df <- as.data.frame(count_table)
 
-soft_skills_df <- as.data.frame(prop.table(table(strsplit(paste(stringi::stri_remove_empty(data$soft_skill_groupings_2, na_empty = T), collapse = ','), ","))))
-names(soft_skills_df) <- c("Soft Skills Groupings", "Frequencies")
+soft_skills_count_df_final <- count_df %>% arrange(desc(Freq)) %>% mutate(Frequency_Percent = round(Freq/sum(Freq), 3)*100)
+soft_skills_count_df_final
 
 
+#soft_skills_df <- as.data.frame(prop.table(table(strsplit(paste(stringi::stri_remove_empty(data$soft_skill_groupings_2, na_empty = T), collapse = ','), ","))))
+#names(soft_skills_df) <- c("Soft Skills Groupings", "Frequencies")
+#soft_skills_df
 
- ggplot(data = soft_skills_df) +
-  aes(x = reorder("Soft Skills Groupings", "Frequencies") , y = Frequencies) + 
-  scale_y_continuous(labels = percent) +
-  geom_text(aes(label = Frequencies), hjust = -.15) + 
-  labs(title = "Top Soft Skills") + 
-  xlab("Var1") +
-  ylab("Freq") + 
+
+# ggplot(data = soft_skills_df) +
+#  aes(x = reorder("Soft Skills Groupings", "Frequencies") , y = Frequencies) + 
+#  scale_y_continuous(labels = percent) +
+#  geom_text(aes(label = Frequencies), hjust = -.15) + 
+#  labs(title = "Top Soft Skills") + 
+#  xlab("Var1") +
+#  ylab("Freq") + 
+#  theme(
+#    panel.background = element_rect(fill = "white", color = NA),
+#     axis.ticks.y = element_blank(),
+#    axis.text.x = element_blank(),
+#    axis.ticks.x = element_blank(),
+#    plot.title = element_text(hjust = 0.45)
+#  ) +
+#  coord_flip() 
+
+```
+
+```{r fig.width=13, fig.height= 4}
+  ggplot(data = soft_skills_count_df_final) +
+  aes(x = reorder(Var1, Frequency_Percent), y = Frequency_Percent) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = paste0(Frequency_Percent, "%")), hjust = -.15) +
+  labs(title = "Top Data Science Soft Skills") +
+  xlab("Skill") +
+  ylab("Percent") +
   theme(
     panel.background = element_rect(fill = "white", color = NA),
      axis.ticks.y = element_blank(),
     axis.text.x = element_blank(),
     axis.ticks.x = element_blank(),
-     plot.title = element_text(hjust = 0.45)
+     plot.title = element_text(hjust = 0.35)
   ) +
-  coord_flip() 
+  coord_flip()
+```
+
+
+
+```{r Analysis-1a-Hard-Skills-Section}
+
+count_table1 <- table(strsplit(paste(stringi::stri_remove_empty(data$hard_skill_groupings_2, na_empty = T), collapse = ','), ","))
+count_df1 <- as.data.frame(count_table1)
+
+hard_skills_count_df_final <- count_df1 %>% arrange(desc(Freq)) %>% mutate(Frequency_Percent = round(Freq/sum(Freq), 3)*100)
+hard_skills_count_df_final
+
 
 ```
+
+```{r fig.width=13, fig.height= 4}
+  ggplot(data = hard_skills_count_df_final) +
+  aes(x = reorder(Var1, Frequency_Percent), y = Frequency_Percent) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = paste0(Frequency_Percent, "%")), hjust = -.15) +
+  labs(title = "Top Data Science Hard Skills") +
+  xlab("Skill") +
+  ylab("Percent") +
+  theme(
+    panel.background = element_rect(fill = "white", color = NA),
+     axis.ticks.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+     plot.title = element_text(hjust = 0.35)
+  ) +
+  coord_flip()
+```
+
 
 
 
