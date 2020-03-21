@@ -9,119 +9,154 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls(all.names = TRUE)) 
 ```
 
 ```{r}
-#install.packages("rvest")
-#install.packages("xml2")
-#install.packages("tidyverse")
-#install.packages("stringr")
-#install.packages("dplyr")
-#install.packages("DT")
+# install.packages("rvest")
+# install.packages("xml2")
+# install.packages("tidyverse")
+# install.packages("stringr")
+# install.packages("dplyr")
+# install.packages("DT")
+# install.packages("rlist")
+# install.packages("pipeR")
+# install.packages("tm")
+# install.packages("tidyr")
+# install.packages("tidytext")
 ```
 
 ```{r}
-library(tidyverse)
+# library(plyr)
+# library(tidyverse)
+# library(rvest)
+# library(xml2)
+# library(stringr)
+# 
+# library(dplyr)
+# library(tidyr)
+# library(DT)
+# library("tibble")
+# library(data.table)
+# 
+# library(rlist)
+# library(pipeR)
+# library(tm)
+# library(broom)
+# library(tidytext)
+
 library(rvest)
-library(xml2)
-library(stringr)
+library(plyr)
 library(dplyr)
-library(DT)
+library(stringr)
+library(tidyr)
+library(ggplot2)
+library(tm)
+library(tidytext)
+library(rJava)
+library(tm)
+library(broom)
+library(scales) 
+
+
 ```
 
-```{r}
-  scraper_func <- function(url) {
-  job_title <- page %>% 
-  rvest::html_nodes(".jobtitle") %>%
-  rvest::html_attr("title")
-  location <- page %>%
-  rvest::html_nodes(".location") %>%
-  rvest::html_text()
-  company_name <- page %>% rvest::html_nodes(".company") %>%
-  rvest::html_text() %>%
-  stringi::stri_trim_both()  
-  links <- page %>% 
-  rvest::html_nodes('[data-tn-element="jobTitle"]') %>%
-  rvest::html_attr("href")
-  job_desc <- c()
-  for (link in links) {
-    url <- paste0("https://www.indeed.com/", link)
-    page <- xml2::read_html(url) %>% html_node("#jobDescriptionText") %>%
-      html_text() %>%
-        stringi::stri_trim_both()
-    job_desc <- c(job_desc, page)
-  }
-  df <- data.frame(job_title, location, company_name, job_desc)
-  return(df)
-  }
-pages <- seq(from = 0, to = 990, by = 10 )
-ds_df <- data.frame()
-url <- "https://www.indeed.com/jobs?q=data+scientist&l=USA"
-page <- xml2::read_html(url)
-for (i in pages) {
-  if (i == 0) {
-    page <- xml2::read_html(url)
-    Sys.sleep(3)
-    df <- scraper_func(page)
-    ds_df <- rbind(ds_df, df)
-  } else {
-    url_next <- paste0(url, "&start=", i)
-    page <- xml2::read_html(url)
-    Sys.sleep(3)
-    df <- scraper_func(page)
-    ds_df <- rbind(ds_df, df)
-  }
-  }
-ds_df
-```
+
+<!-- ```{r} -->
+<!--   scraper_func <- function(url) { -->
+<!--   job_title <- page %>%  -->
+<!--   rvest::html_nodes(".jobtitle") %>% -->
+<!--   rvest::html_attr("title") -->
+<!--   location <- page %>% -->
+<!--   rvest::html_nodes(".location") %>% -->
+<!--   rvest::html_text() -->
+<!--   company_name <- page %>% rvest::html_nodes(".company") %>% -->
+<!--   rvest::html_text() %>% -->
+<!--   stringi::stri_trim_both()   -->
+<!--   links <- page %>%  -->
+<!--   rvest::html_nodes('[data-tn-element="jobTitle"]') %>% -->
+<!--   rvest::html_attr("href") -->
+<!--   job_desc <- c() -->
+<!--   for (link in links) { -->
+<!--     url <- paste0("https://www.indeed.com/", link) -->
+<!--     page <- xml2::read_html(url) %>% html_node("#jobDescriptionText") %>% -->
+<!--       html_text() %>% -->
+<!--         stringi::stri_trim_both() -->
+<!--     job_desc <- c(job_desc, page) -->
+<!--   } -->
+<!--   df <- data.frame(job_title, location, company_name, job_desc) -->
+<!--   return(df) -->
+<!--   } -->
+<!-- pages <- seq(from = 0, to = 990, by = 10 ) -->
+<!-- ds_df <- data.frame() -->
+<!-- url <- "https://www.indeed.com/jobs?q=data+scientist&l=USA" -->
+<!-- page <- xml2::read_html(url) -->
+<!-- for (i in pages) { -->
+<!--   if (i == 0) { -->
+<!--     page <- xml2::read_html(url) -->
+<!--     Sys.sleep(3) -->
+<!--     df <- scraper_func(page) -->
+<!--     ds_df <- rbind(ds_df, df) -->
+<!--   } else { -->
+<!--     url_next <- paste0(url, "&start=", i) -->
+<!--     page <- xml2::read_html(url) -->
+<!--     Sys.sleep(3) -->
+<!--     df <- scraper_func(page) -->
+<!--     ds_df <- rbind(ds_df, df) -->
+<!--   } -->
+<!--   } -->
+<!-- ds_df -->
+<!-- ``` -->
+
+## Data Cleaning
+There are total 1200 number of rows data available in the raw dataset. Cleaning process gives the relevant data for analysis.
+This step is comprised of several sub-steps outlined below:
++ Remove duplicate row
++ Remove `\n` from Job_desc `column`
++ Split `location` column to `location` and `State`. Location column shows city name and State shows state code such as CA - California, and FL - Florida
++ Converted all job_description column to lower case, this helps to compair relevant words for `hard skills` and `soft skills`
++ Created 2 vectors, added all soft and hard skills words in it
++ Compare the keywords(values) against `job description` column. Matching words put in the respective columns
++ Create Regex function to pull out salary range from `job description`
++ Create one function(makenumcols), convert `salary_higher_range` and `salary_lower_range` from charecter to numeric
++ Create 2 more new columns, to disply unique value of hard and soft skills
 
 
 ```{r}
 #data cleaning
 data <- readr::read_csv("https://raw.githubusercontent.com/christianthieme/MSDS-DATA607/master/indeed_scrape.csv")
-
 #remove duplicate
 data <- unique(data)
-
 #remove row where job description is blank
 data <- data %>% filter(job_desc != "")
-
 # remove "\n" from job description
 data$job_desc <-  str_replace_all(data$job_desc, "[\r\n]" , "")
-#data$job_desc <-  gsub("\\.|\\,"," ",data$job_desc )
-#data$job_desc <-  str_replace_all(data$job_desc, "." , " ")
-
 #creat one more column with state
 location_ex <- "[A-Z]{2}"
 data <- data %>% mutate(state = str_extract(location, location_ex))
-
 #remove postal code from city
 postal_ex <- "\\w+.\\w+"
 data$location <-  str_extract(data$location, postal_ex)
-
-
 #order the data
 data <- data %>% select(job_title,location,state,company_name,job_desc)
-
 #change all the upper case letter to lower case
 data$job_desc <- tolower(data$job_desc)
-
 #view data
-data
+head(data, 10)
 ```
 
-```{r}
-
+```{r softskills}
+# created vector for soft skills
 tags_softskills <- c('highly motivated','curious','critical thinking', 'problem solving',  'creativity','collaboration',"enthusiastic over-achievers","interpersonal skills","analytical thinker","passionate","humble","resourceful", "work independently","driving on-time","ability to think outside-the-box","communication","communicate","solve the business problem","decision-making"
 )
 tags_softskills <- tolower(tags_softskills)
-
-#Extract keywords from "description" column and create new column with keywords 
+#unique(tags_softskills)
+#Extract keywords from "description" column and create new column with keywords
 tag_ex <- paste0('(', paste(tags_softskills, collapse = '|'), ')')
 data <- data %>%
 mutate(soft_skills = sapply(str_extract_all(job_desc, tag_ex), function(x) paste(x, collapse=',')))
-
-unique(tags_softskills)
+#view data
+head(data)
 ```
 
 
@@ -129,42 +164,36 @@ unique(tags_softskills)
 
 
 
-```{r}
+```{r hardskills}
+# created bucket for hard skills
 tags_technicalskills <- c("analytic solutions","machine learning","predictive modeling","database systems","clinical decision engines", "algorithms", "NLP/ML", "SQL",  "MongoDB","DynamoDB", "R, ","Python","dplyr","GGPlot", "Pandas","OLS","MLE","Machine Learning",  "Decision Tree/Random Forest","AI" , "Visualization","A/B tests set-up","Reporting","analysis",  "data visualizations","numpy", "scipy","scikit-learn", "tensorflow","pytorch" , "keras","genism", "vowpal wabbit","Heap.io","Google Analytics","Big Data","Business Analytics","Oracle","Relational Database Management System (RDMS)","Statistical Programming Language","Regression","Decision Trees","K-Means","Tableau","looker","R Programming" ,"Microsoft Office" , "SPSS","No-SQL", "Cassandra","Hadoop", "Pig","Hive", "HPCC Systems","Javascript" , "Java programming","PowerBI","Linux","TensorFlow", "Keras","Shiny","Artificial Intelligence","NLP", "Tesseract","Jenkins CI/CD", "Azure","logistic regression","k-means clustering","decision forests", "JavaScript","Cloud data", "MATLAB","Excel", "Jupyter","Gurobi","agile", "Git","Github" ,"SNR signals", "Qlikview","Business Intelligence", "supply chain","D3", "big data",'business sense','C Programming','group API', 'Get Requests', 'Push Requests', 'Update Requests','AWS', 'Sagemaker','Power BI','Cognos', 'Business Objects','Amplitude','Mixpanel','Salesforce', 'Qlik','Microstrategy', 'java, ')
-
 tags_technicalskills <- tolower(tags_technicalskills)
-tags_technicalskills
-
+#unique(tags_technicalskills)
 #Extract keywords from "description" column and create new column with keywords
 tag_ex <- paste0('(', paste(tags_technicalskills, collapse = '|'), ')')
-
 data <- data %>%
 mutate(hard_skills = sapply(str_extract_all(job_desc, tag_ex), function(x) paste(x, collapse=',')))
 data <- data %>% select (job_title,location,state,company_name,job_desc,hard_skills,soft_skills)
-#unique(tags_technicalskills)
+#view data
+head(data)
 ```
 
-```{r}
-library(dplyr)
-#tags_salary <- "(\\$?[0-9]{2,3},?[0-9]{3}\\.?([0-9]{2})?[ \\/to-]{3,4}\\$?[0-9]{2,3},?[0-9]{3}\\.?([0-9]{2})?)|([0-9]{2,3},?[0-9]{3})[:space:].\\/"
-
+```{r salary}
+# regex for salary upper range
 tags_salary_lower <- "\\$[0-9]{2,},?[0-9]{3}\\.?([0-9]{2})|(\\$[0-9]{2,3},?[0-9]{3})"
+# regex for salary lower range
 tags_salary_upper <- "([\\/to-]\\s\\$[0-9]{2,},?[0-9]{3}\\.?([0-9]{2}))|([\\/to-]\\s\\$[0-9]{2,},?[0-9]{3})"
-
-
-#data <- data %>% mutate(salary = str_extract(job_desc, tags_salary))
+# created new column named as salary_lower_range and salary_higher_range
 data <- data %>% mutate(salary_lower_range = str_extract(job_desc, tags_salary_lower))
 data <- data %>% mutate(salary_higher_range = str_extract(job_desc, tags_salary_upper))
+# remove "$" and punctuations from the salary
 data$salary_lower_range <- gsub("\\$|,", "", data$salary_lower_range)
 data$salary_higher_range <- gsub("\\$|,|o|-|/", "", data$salary_higher_range)
-
 # change character to integer
 makenumcols<-function(data)
   {
   data<-as.data.frame(data) # stored in a data frame
-  
   data[] <- lapply(data, as.character) # check for character type
-  
   cond <- apply(data, 2, function(x) { # condition for numeric, if numeric value True or else False
     x <- x[!is.na(x)]
     all(suppressWarnings(!is.na(as.numeric(x))))
@@ -176,64 +205,63 @@ makenumcols<-function(data)
   return(data)
 }
 data <- makenumcols(data)
-#data <-  data %>% filter(!is.na(salary_lower_range))
 #data <- select(data, -c(technical_skills,technical_skills_2,hard_skills_2))
+#view data
 head(data,5)
 ```
 
-```{r}
-library(stringr)
-
+```{r uniqueSkills}
 # remove duplicate hard skills
 data$hard_skills_2  <- sapply(strsplit(data$hard_skills, ","), function(x) paste(unique(x), collapse = ","))
-
 #unique(unlist(strsplit(data$hard_skills_2,",")))
-
 # remove duplicate soft skills
 data$soft_skills_2 <- sapply(strsplit(data$soft_skills, ","), function(x) paste(unique(x), collapse = ","))
-
 # arrange data
 data <- data %>% select(job_title, location, state, company_name, job_desc, hard_skills, hard_skills_2, soft_skills, soft_skills_2, salary_lower_range, salary_higher_range)
-
 # view data
 head(data,30)
 
 ```
 
-
-
-```{r}
+```{r skillsetgrouping-only-run-once}
 # replace "r," to r and c, to c and java, to java
 data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "r, ", replacement = "r", fixed = TRUE))
 data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "c, ", replacement = "c", fixed = TRUE))
 data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "java, ", replacement = "java", fixed = TRUE))
-
 data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "r programming", replacement = "r", fixed = TRUE))
 data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "c programming", replacement = "c", fixed = TRUE))
 data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "java programming", replacement = "java", fixed = TRUE))
 data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "artificial intelligence", replacement = "ai", fixed = TRUE))
-data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "nlp/ml", replacement = "nlp", fixed = TRUE))
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "nlp|nlp/ml", replacement = "nlp/ml"))
+data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "k-means clustering|k-means", replacement = "k-means clustering"))
 data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "decision tree/random forest", replacement = "decision trees", fixed = TRUE))
 data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "random forest", replacement = "decision trees", fixed = TRUE))
 data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "data visualizations", replacement = "visualizations", fixed = TRUE))
-data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "k-means clustering", replacement = "k-means", fixed = TRUE))
 data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "microsoft office", replacement = "excel", fixed = TRUE))
 data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "sagemaker", replacement = "aws", fixed = TRUE))
 data$hard_skills_2 <- as.character(lapply(data$hard_skills_2, gsub, pattern = "heap.io", replacement = "heap", fixed = TRUE))
-
+data$soft_skills_2 <- as.character(lapply(data$soft_skills_2, gsub, pattern = "communicate|communication", replacement = "communication skills"))
 # get unique value
 data$hard_skills_2 <- sapply(strsplit(data$hard_skills_2, ","), function(x) paste(unique(x), collapse = ","))
-
+data$soft_skills_2 <- sapply(strsplit(data$soft_skills_2, ","), function(x) paste(unique(x), collapse = ","))
 # view data
-head(data, 40)
-#unique(unlist(strsplit(unique(data$hard_skills_2),",")))
+head(data)
 ```
 
 
+
+
+
+```{r reloading-data}
+
+data <- read.csv("https://raw.githubusercontent.com/SubhalaxmiRout002/Data-607-Project-3/master/data.csv", stringsAsFactors = FALSE)
+
+```
+
 ```{r groupings-creation}
-require(rJava)
+#require(rJava)
 #library(qdap)
-library(rJava)
+
 
 str(data)
 head(data$hard_skills_2,1)
@@ -242,36 +270,36 @@ head(data$hard_skills_2,1)
 # Hardskills Section 
 HS1 <- tolower(c("database systems", "clinical decision engines", "MongoDB", "DynamoDB","Big Data", "Oracle", "Relational Database Management System (RDMS)", "No-SQL", "Cassandra", "Hadoop", "HPCC Systems", "Linux"))
 HS2 <- tolower(c("PowerBI", "Business Intelligence", "Cognos", "Business Objects", "Salesforce", "Microstrategy"))
-HS3 <- tolower(c("API"))
+HS3 <- tolower(c("API", "push requests", "get requests", "update requests"))
 HS4 <- tolower(c("supply chain", "business sense", "business knowledge"))
-HS5 <- tolower(c("predictive modeling", "R Programming", "MLE", "Decision Tree/Random Forest", "A/B tests set-up", "genism", "Statistical Programming Language", "Regression", "Decision Trees", "K-Means", "SPSS", "logistic regression"))
-HS6 <- tolower(c("machine learning","NLP/ML", "AI", "tensorflow", "pytorch", "keras","Vowpal Wabbit", "python-Tesseract"))
+HS5 <- tolower(c("predictive modeling", "R Programming", "MLE", "Decision Tree/Random Forest", "A/B tests set-up", "genism", "Statistical Programming Language", "Regression", "Decision Trees", "K-means clustering", "SPSS", "logistic regression","decision forests"))
+HS6 <- tolower(c("machine learning","NLP/ML", "AI", "tensorflow", "pytorch", "keras","Vowpal Wabbit", "Tesseract","NLP", "algorithms", "numpy", "scikit-learn", "Java", "MATLAB", "Gurobi","algorithmsscript", "C Programming"))
 HS7 <- tolower(c("SQL", "Python", "scipy", "Pig", "Hive"))
-HS8 <- tolower(c("analytic solutions", "dplyr", "Pandas", "OLS", "Reporting", "analysis", "Business Analytics", "Microsoft Office", "Shiny", "Jupyter"))
-HS9 <- tolower(c("algorithms", "numpy", "scikit-learn", "Java", "MATLAB", "Gurobi"))
-HS10 <- tolower(c("GGPlot", "Visualization", "Tableau", "looker", "Qlikview", "D3"))
-HS11 <- tolower(c("Heap.io", "Amplitude"))
-HS12 <- tolower(c("Google Analytics", "Javascript"))
-HS13 <- tolower(c("Jenkins CI/CD", "Git", "Github"))
-HS14 <- tolower(c("Azure", "Cloud data", "AWS", "Sagemaker"))
-HS15 <- tolower(c("agile"))
+HS8 <- tolower(c("analytic solutions", "dplyr", "Pandas", "OLS", "Reporting", "analysis", "Business Analytics", "Microsoft Office", "Shiny", "Jupyter", "excel"))
+HS9 <- tolower(c("GGPlot", "Visualization", "Tableau", "looker", "Qlik", "D3"))
+HS10 <- tolower(c("Heap.io", "Amplitude","heap", "mixpanel"))
+HS11 <- tolower(c("Google Analytics", "Javascript"))
+HS12 <- tolower(c("Jenkins CI/CD", "Git", "Github"))
+HS13 <- tolower(c("Azure", "Cloud data", "AWS", "Sagemaker"))
+HS14 <- tolower(c("agile"))
 
-data$hard_skill_groupings <- qdap::multigsub(HS1, "Data Modeling and DB Systems", data$hard_skills_2) 
-data$hard_skill_groupings <- qdap::multigsub(HS2, "Business Intelligence", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS1, "DataModeling&DbSystems", data$hard_skills_2) 
+data$hard_skill_groupings <- qdap::multigsub(HS2, "BusinessIntelligence", data$hard_skill_groupings)
 data$hard_skill_groupings <- qdap::multigsub(HS3, "API", data$hard_skill_groupings)
-data$hard_skill_groupings <- qdap::multigsub(HS4, "Business Understanding", data$hard_skill_groupings)
-data$hard_skill_groupings <- qdap::multigsub(HS5, "Statistics and Advanced Data Mining", data$hard_skill_groupings)
-data$hard_skill_groupings <- qdap::multigsub(HS6, "AI/ML", data$hard_skill_groupings)
-data$hard_skill_groupings <- qdap::multigsub(HS7, "Scripting Languages", data$hard_skill_groupings)
-data$hard_skill_groupings <- qdap::multigsub(HS8, "Business Analytics & Reporting", data$hard_skill_groupings)
-data$hard_skill_groupings <- qdap::multigsub(HS9, "Algorithms", data$hard_skill_groupings)
-data$hard_skill_groupings <- qdap::multigsub(HS10, "Visualizations", data$hard_skill_groupings)
-data$hard_skill_groupings <- qdap::multigsub(HS11, "Product Analytics", data$hard_skill_groupings)
-data$hard_skill_groupings <- qdap::multigsub(HS12, "Web Analytics", data$hard_skill_groupings)
-data$hard_skill_groupings <- qdap::multigsub(HS13, "Opensource Management Systems & Automations", data$hard_skill_groupings)
-data$hard_skill_groupings <- qdap::multigsub(HS14, "Cloud Computing", data$hard_skill_groupings)
-data$hard_skill_groupings <- qdap::multigsub(HS15, "Agile", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS4, "BusinessUnderstanding", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS5, "Statistics&AdvancedDataMining", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS6, "AI/ML&Algorithms", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS7, "ScriptingLanguages", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS8, "BusinessAnalytics&Reporting", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS9, "Visualizations", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS10, "ProductAnalytics", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS11, "WebAnalytics", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS12, "OpensourceManagementSystems&Automations", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS13, "CloudComputing", data$hard_skill_groupings)
+data$hard_skill_groupings <- qdap::multigsub(HS14, "Agile", data$hard_skill_groupings)
 
+
+hard_skill_levels <- c("DataModeling&DbSystems", "BusinessIntelligence", "API", "BusinessUnderstanding", "Statistics&AdvancedDataMining", "AI/ML&Algorithms", "ScriptingLanguages", "BusinessAnalytics&Reporting", "Visualizations", "ProductAnalytics", "WebAnalytics", "OSMS&Automations", "CloudComputing", "Agile" )
 
 # checking hard_skills_2 vs hard_skill_groupings 
 data %>% select  (one_of(c("hard_skills_2", "hard_skill_groupings"))) %>% head(4)
@@ -289,7 +317,7 @@ head(data$soft_skills_2,1)
 
 SS1 <- tolower(c("collaboration"))
 SS2 <- tolower(c("critical thinking", "problem solving", "analytical thinker","resourceful", "work independently", "ability to think outside-the-box", "solve the business problem"))
-SS3 <- tolower(c("creativity"))
+SS3 <- tolower(c("Think creatively", "creativity","curious", "curiosity"))
 SS4 <- tolower(c("highly motivated", "enthusiastic over-achievers", "passionate"))
 SS5 <- tolower(c("interpersonal skills", "humble"))
 SS6 <- tolower(c("driving on-time"))
@@ -297,13 +325,16 @@ SS7 <- tolower(c("decision-making"))
 SS8 <- tolower(c("communicate", "communication skills"))
 
 data$soft_skill_groupings <- qdap::multigsub(SS1, "Teamwork", data$soft_skills_2) 
-data$soft_skill_groupings <- qdap::multigsub(SS2, "Problem-Solving", data$soft_skill_groupings) 
-data$soft_skill_groupings <- qdap::multigsub(SS3, "Creativity", data$soft_skill_groupings) 
-data$soft_skill_groupings <- qdap::multigsub(SS4, "Work Ethic", data$soft_skill_groupings) 
-data$soft_skill_groupings <- qdap::multigsub(SS5, "Interpersonal Skills", data$soft_skill_groupings) 
-data$soft_skill_groupings <- qdap::multigsub(SS6, "Time Management", data$soft_skill_groupings) 
+data$soft_skill_groupings <- qdap::multigsub(SS2, "ProblemSolving", data$soft_skill_groupings) 
+data$soft_skill_groupings <- qdap::multigsub(SS3, "IntellectualCuriosity", data$soft_skill_groupings) 
+data$soft_skill_groupings <- qdap::multigsub(SS4, "WorkEthic", data$soft_skill_groupings) 
+data$soft_skill_groupings <- qdap::multigsub(SS5, "InterpersonalSkills", data$soft_skill_groupings) 
+data$soft_skill_groupings <- qdap::multigsub(SS6, "TimeManagement", data$soft_skill_groupings) 
 data$soft_skill_groupings <- qdap::multigsub(SS7, "Leadership", data$soft_skill_groupings) 
-data$soft_skill_groupings <- qdap::multigsub(SS8, "Communication Skills", data$soft_skill_groupings) 
+data$soft_skill_groupings <- qdap::multigsub(SS8, "CommunicationSkills", data$soft_skill_groupings) 
+
+
+Soft_skills_levels <- c("Teamwork", "ProblemSolving", "IntellectualCuriosity", "WorkEthic", "InterpersonalSkills", "TimeManagement", "Leadership", "CommunicationSkills")
 
 # checking soft_skills_2 vs soft_skill_groupings 
 data %>% select  (one_of(c("soft_skills_2", "soft_skill_groupings"))) %>% head(4)
@@ -316,9 +347,10 @@ data %>% select  (one_of(c("soft_skills_2", "soft_skill_groupings_2"))) %>% head
 
 ```
 
+
+#### Analysis 1a -- Top Data Science Soft Skills
 ```{r Analysis-1a}
-library(ggplot2)
-library(scales) 
+
 # https://stackoverflow.com/questions/19835987/display-frequency-instead-of-count-with-geom-bar-in-ggplot
 
 #hist(table(data$soft_skill_groupings_2[[1]], freq = FALSE)
@@ -337,7 +369,7 @@ library(scales)
 #head(data$soft_skill_groupings_2, 10)
 
 # barplot approach 
-barplot(prop.table(table(strsplit(paste(stringi::stri_remove_empty(data$soft_skill_groupings_2, na_empty = T), collapse = ','), ","))), beside = T, angle = 45)
+# barplot(prop.table(table(strsplit(paste(stringi::stri_remove_empty(data$soft_skill_groupings_2, na_empty = T), collapse = ','), ","))), beside = T, angle = 45)
 
 # trying the ggplot approach... it isn't working fully yet.
 #soft_skills_final<-strsplit(paste(stringi::stri_remove_empty(data$soft_skill_groupings_2, na_empty = T), collapse = ','), ",")
@@ -392,7 +424,7 @@ soft_skills_count_df_final
   coord_flip()
 ```
 
-
+#### Analysis 1a -- Top Data Science Hard Skills
 
 ```{r Analysis-1a-Hard-Skills-Section}
 
@@ -424,7 +456,290 @@ hard_skills_count_df_final
 ```
 
 
+```{r data1-creation}
+data1 <- data
+# create city_state
+data1$city_state <- paste(data$location, sep = " ", data$state)
 
+```
+
+
+
+```{r data2-creation}
+
+data2 <- data1 %>% select (city_state, hard_skill_groupings_2, soft_skill_groupings_2)
+head(data2, 4)
+
+# unique(data2$city_state)
+```
+
+
+#### Analysis 1b -- Top Data Science Soft Skills by location
+
+```{r Analysis-1b-Soft-Skills-by-geo-location}
+# str(data)
+# head(data[,c("location","state" )] )
+# 
+# #  paste(data$location, sep = " ", data$state)
+
+# 
+# data2 <- data1 %>% select (city_state, hard_skill_groupings_2, soft_skill_groupings_2) %>% group_by (city_state) 
+# # data1 #%>% select(city_state, hard_skill_groupings_2) %>% 
+# #   table(strsplit(paste(stringi::stri_remove_empty(data1$hard_skill_groupings_2, na_empty = T), collapse = ','), ",")) %>% group_by( paste(location, sep = " ", state)) 
+# 
+# data2 %>%  summarize(soft_skill_groupings_2 = n())
+# 
+# data2 %>% count(table(strsplit(paste(stringi::stri_remove_empty(data2$soft_skill_groupings_2, na_empty = T), collapse = ','), ",")) , id) %>% {table(.$vall)}
+# 
+# table(strsplit(paste(stringi::stri_remove_empty(data2$soft_skill_groupings_2, na_empty = T), collapse = ','), ",")
+#       
+#       
+#       
+# count(strsplit(paste(stringi::stri_remove_empty(data2$soft_skill_groupings_2, na_empty = T), collapse = ','), ","), data2$city_state)
+# 
+# data2 %>%> count()
+# str(table(strsplit(paste(stringi::stri_remove_empty(data2$soft_skill_groupings_2, na_empty = T), collapse = ','), ",")) )
+# table(strsplit(paste(stringi::stri_remove_empty(data2$soft_skill_groupings_2, na_empty = T), collapse = ','), ","), responseName = counts) 
+# 
+# 
+# 
+# data.table1 <- table(strsplit(paste(stringi::stri_remove_empty(data2$soft_skill_groupings_2, na_empty = T), collapse = ','), ",")) 
+# df1 <- as.data.frame(data.table1)
+# str(df1)
+# df1
+# setDT(df1)[, .(Var1, Freq)][, .N , Freq]
+# 
+# setDT(data2)[, .(strsplit(paste(stringi::stri_remove_empty(data2$soft_skill_groupings_2, na_empty = T), collapse = ','), ","), city_state)]
+# data.table2<- setDT(data2)[, .(strsplit(paste(stringi::stri_remove_empty(data2$soft_skill_groupings_2, na_empty = T), collapse = ','), ","), city_state)]
+# count(data.table2, )
+# 
+# str(data.table2)
+# 
+# plyr::count(data2, strsplit(paste(stringi::stri_remove_empty(data2$soft_skill_groupings_2, na_empty = T), collapse = ','), ","), city_state )
+# summarise_at(strsplit(paste(stringi::stri_remove_empty(data2$soft_skill_groupings_2, na_empty = T), collapse = ','), ","), )
+# 
+# 
+# data2 %>% group_by("city_state") %>% count(paste(stringi::stri_remove_empty(data2$soft_skill_groupings_2, na_empty = T), collapse = ','))
+# 
+# data2 %>% group_by("city_state") %>% mutate( counts=n(), lists=list(strsplit(paste(stringi::stri_remove_empty(data2$soft_skill_groupings_2, na_empty = T), collapse = ','), ",")) )
+# 
+# # method 1 using dplyr
+# data2 %>% group_by(city_state) %>% count(soft_skill_groupings_2, city_state) %>% {table(.$soft_skill_groupings_2)}
+# 
+# # method 2 using count functions
+# 
+#  count(data2, soft_skill_groupings_2, city_state ) %>% count(soft_skill_groupings_2)
+#  
+#  # method 3 using group_by and count
+#  data2 %>% group_by(city_state) %>% count(soft_skill_groupings_2) %>% group_by(city_state, soft_skill_groupings_2) %>% count()
+#  
+#  
+#  data2 %>% group_by(city_state) %>% as.data.frame( table(strsplit(paste(stringi::stri_remove_empty(soft_skill_groupings_2, na_empty = T), collapse = ','), ",")) )%>%  head (1) group_by(city_state, soft_skill_groupings_2) %>% count()
+#  
+#  
+#  data2 %>% group_by(city_state) %>%  mutate ( lists=as.character(count(paste(stringi::stri_remove_empty(data2$soft_skill_groupings_2, na_empty = T), collapse = ',')))) %>% group_by(city_state, soft_skill_groupings_2) %>% count()
+
+head(as.data.frame(table(data2$city_state)) %>% arrange(desc(Freq)),10)
+# 1             New York NY   59
+# 2          Los Angeles CA   41
+# 3        San Francisco CA   40
+# 4              Chicago IL   30
+# 5            San Diego CA   30
+# 6               Boston MA   29
+# 7           Washington DC   28
+# 8          Santa Clara CA   16
+# 9               Denver CO   13
+# 10             Seattle WA   13
+
+```
+
+##### TF-IDF stnads for term frequency-inverse document frequency
+```{r new-approach-1b.1}
+#library(tm)
+# Control list to be used for all corpuses
+# control_list <- list( tolower = F)
+
+control_list <- list(weighting = weightTfIdf)
+
+# Trying to divide the corpus by cities
+
+ny <- data2[data2$city_state == "New York NY", 3]
+la <- data2[data2$city_state == "Los Angeles CA", 3] 
+sf <- data2[data2$city_state == "San Francisco CA", 3] 
+chi <- data2[data2$city_state == "Chicago IL", 3] 
+sd <- data2[data2$city_state == "San Diego CA", 3] 
+bos <- data2[data2$city_state == "Boston MA", 3] 
+wdc <- data2[data2$city_state == "Washington DC", 3] 
+sc <- data2[data2$city_state == "Santa Clara CA", 3]
+den <- data2[data2$city_state == "Denver CO", 3 ] 
+sea <- data2[data2$city_state == "Seattle WA", 3]
+
+cities <- c(ny, la, sf, chi, sd, bos, wdc, sc, den, sea)
+
+
+
+
+
+corpus.city <- VCorpus(VectorSource(cities))
+#list(c("Teamwork", "Problem-Solving","Creativity", "Work Ethic", "Interpersonal Skills", "Time Management", "Leadership", "Communication Skills"))
+
+
+
+tdm.city <- DocumentTermMatrix(corpus.city , control = control_list)
+                                # list(c("Teamwork", "Problem-Solving","Creativity", "Work Ethic", "Interpersonal Skills", "Time Management", "Leadership", "Communication Skills")))
+#list(c("Teamwork", "Problem-Solving","Creativity", "Work Ethic", "Interpersonal Skills", "Time Management", "Leadership", "Communication Skills")))
+
+
+
+# Make city dataframe
+
+
+df_city <- tidy(tdm.city)
+
+df_city
+
+df_city$document <- mapvalues(df_city$document,
+                                          from = 1:10,
+                                          to = c("NY", "LA", "SF",
+                                                 "CHI", "SD", "BOS",
+                                                 "WDC", "SC", "DEN", "SEA"
+                                                )
+                             )
+
+
+
+
+showgraph <- function(i) {
+df_city %>%
+  arrange(desc(count)) %>%
+  # mutate(word = factor(term, levels = rev(unique(term)) ),
+  mutate(word = factor(Soft_skills_levels[[i]], levels = Soft_skills_levels[[i]] ),
+           city = factor(document, levels = c("NY", "LA", "SF",
+                                                 "CHI", "SD", "BOS",
+                                                 "WDC", "SC", "DEN", "SEA"
+                                             )
+                        )
+        ) %>%
+  group_by(document) %>%
+  top_n(6, wt = count) %>%
+  ungroup() %>%
+  ggplot(aes(word, count, fill = document)) +
+  geom_bar(stat = "identity", alpha = 0.8, show.legend = FALSE) +
+  labs(title = "Top Data Science Soft Skills by City",
+       x = "Soft Skills Groupings", y = "TF-IDF") +
+  facet_wrap(~city, ncol = 2, scales = "free_y") +
+  coord_flip()
+
+}
+showgraph(1)
+showgraph(2)
+showgraph(3)
+showgraph(4)
+showgraph(5)
+showgraph(6)
+showgraph(7)
+showgraph(8)
+
+```
+
+
+#### Analysis 1b -- Top Data Science Hard Skills by location
+
+```{r new-approach-1b.2}
+#library(tm)
+# Control list to be used for all corpuses
+# control_list <- list( tolower = F)
+
+control_list <- list(weighting = weightTfIdf)
+
+# Trying to divide the corpus by cities
+
+ny <- data2[data2$city_state == "New York NY", 2]
+la <- data2[data2$city_state == "Los Angeles CA", 2] 
+sf <- data2[data2$city_state == "San Francisco CA", 2] 
+chi <- data2[data2$city_state == "Chicago IL", 2] 
+sd <- data2[data2$city_state == "San Diego CA", 2] 
+bos <- data2[data2$city_state == "Boston MA", 2] 
+wdc <- data2[data2$city_state == "Washington DC", 2] 
+sc <- data2[data2$city_state == "Santa Clara CA", 2]
+den <- data2[data2$city_state == "Denver CO", 2 ] 
+sea <- data2[data2$city_state == "Seattle WA", 2]
+
+cities <- c(ny, la, sf, chi, sd, bos, wdc, sc, den, sea)
+
+
+
+
+
+corpus.city <- VCorpus(VectorSource(cities))
+#list(c("Teamwork", "Problem-Solving","Creativity", "Work Ethic", "Interpersonal Skills", "Time Management", "Leadership", "Communication Skills"))
+
+
+
+tdm.city <- DocumentTermMatrix(corpus.city , control = control_list)
+                                # list(c("Teamwork", "Problem-Solving","Creativity", "Work Ethic", "Interpersonal Skills", "Time Management", "Leadership", "Communication Skills")))
+#list(c("Teamwork", "Problem-Solving","Creativity", "Work Ethic", "Interpersonal Skills", "Time Management", "Leadership", "Communication Skills")))
+
+
+
+# Make city dataframe
+
+
+df_city <- tidy(tdm.city)
+
+df_city
+
+df_city$document <- mapvalues(df_city$document,
+                                          from = 1:10,
+                                          to = c("NY", "LA", "SF",
+                                                 "CHI", "SD", "BOS",
+                                                 "WDC", "SC", "DEN", "SEA"
+                                                )
+                             )
+
+
+
+
+showgraph2 <- function(i) {
+df_city %>%
+  arrange(desc(count)) %>%
+  mutate(word = factor(hard_skill_levels[[i]], levels = hard_skill_levels[[i]] ),
+           city = factor(document, levels = c("NY", "LA", "SF",
+                                                 "CHI", "SD", "BOS",
+                                                 "WDC", "SC", "DEN", "SEA"
+                                             )
+                        )
+        ) %>%
+  group_by(document) %>%
+  top_n(3, wt = count) %>%
+  ungroup() %>%
+  ggplot(aes(word, count, fill = document)) +
+  geom_bar(stat = "identity", alpha = 0.8, show.legend = FALSE) +
+  labs(title = "Highest Data Science Hard Skills by City",
+       x = "Hard Skills Groupings", y = "TF-IDF") +
+  facet_wrap(~city, ncol = 2, scales = "free_y") +
+  coord_flip()
+}
+
+showgraph2(1)
+showgraph2(2)
+showgraph2(3)
+showgraph2(4)
+showgraph2(5)
+showgraph2(6)
+showgraph2(7)
+showgraph2(8)
+showgraph2(9)
+showgraph2(10)
+showgraph2(11)
+showgraph2(12)
+showgraph2(13)
+showgraph2(14)
+
+
+
+  
+```
 
 ```{r}
 #Create .csv file
@@ -432,10 +747,4 @@ write.csv(data, file = "data.csv", row.names = FALSE)
 data <- read.csv("data.csv")
 datatable(data)
 ```
-
-```{r}
-
-
-```
-
 
