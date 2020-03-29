@@ -1,0 +1,77 @@
+---
+title: "Week 9 Assignment - Web APIs"
+author: "Dennis Pong"
+date: "3/29/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Introduction
+
+This RMD connects to NYTimes' Most Popular API, reads in JSON data, and transforms it into a R Dataframe.
+
+**Most Popular API**  
+  
+> Provides services for getting the most popular articles on NYTimes.com based on emails, shares, or views.
+
+### Setup
+
+```{r}
+library(jsonlite)
+library(dplyr)
+```
+
+#### Use an alternative but a more consistent mapping to rjson and RJSONIO to convert JSON strings to R objects. Turned on the flatten option to automatically flatten nested data frames into a single non-nested data frame. Skipped the step to use flattern function later on.
+
+#### Top 10 most emailed articles in the past 7 days (published date AND URL)
+
+```{r data-retrieval_(i)}
+
+most_emailed_articles <- fromJSON("https://api.nytimes.com/svc/mostpopular/v2/emailed/7.json?api-key=BLtybA60SxbT2XcgepyXjVVGOQUCn6iR", flatten = TRUE) %>% data.frame()
+
+# str(most_emailed_articles)
+# dim(most_emailed_articles)
+
+
+
+most_emailed_articles %>% select (results.published_date, results.url) %>% head(10)
+```
+
+#### Top 10 most shared articles on facebook in the past 1 day (published date AND URL)
+
+
+```{r data-retrieval-(ii)}
+# Most shared articles on Facebook for the last day
+
+most_shared_articles_fb <- fromJSON("https://api.nytimes.com/svc/mostpopular/v2/shared/1/facebook.json?api-key=BLtybA60SxbT2XcgepyXjVVGOQUCn6iR", flatten = TRUE) %>% data.frame()
+
+# str(most_shared_articles_fb)
+# dim(most_shared_articles_fb)
+
+most_shared_articles_fb %>% select (results.published_date, results.url) %>% head(10)
+
+```
+
+#### Top 10 most viewed articles in the past 30 days (published date AND URL)
+
+
+```{r data_retrival_(iii)}
+
+most_viewed_articles <- fromJSON("https://api.nytimes.com/svc/mostpopular/v2/viewed/30.json?api-key=BLtybA60SxbT2XcgepyXjVVGOQUCn6iR", flatten = TRUE) %>% data.frame()
+
+# str(most_viewed_articles)
+# dim(most_viewed_articles)
+
+most_viewed_articles %>% select (results.published_date, results.url) %>% head(10)
+
+
+
+```
+
+### Final Remarks
+
+#### Figured out that this API only takes 3 different periods of time, namely, 1, 7, 30 days in the past. 
