@@ -39,3 +39,9 @@ Submission 1| Dennis Pong - Week 7 Assignment.Rmd
 ----------------------------------------------------
 
 
+# hw 6
+Submssion # | R Mark Down file name
+------------| --------------------------------------
+Submission 1| Dpong - Week 9 Assignment.Rmd
+----------------------------------------------------
+
