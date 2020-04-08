@@ -45,3 +45,8 @@ Submssion # | R Mark Down file name
 Submission 1| Dpong - Week 9 Assignment.Rmd
 ----------------------------------------------------
 
+# hw 7 
+Submssion # | R Mark Down file name
+------------| --------------------------------------
+Submission 1| dpong-week10_assignment.Rmd
+----------------------------------------------------
