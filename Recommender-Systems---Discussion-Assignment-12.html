@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="generator" content="pandoc" />
+
+        <meta name="author" content="Dennis Pong" />
+    
+        <meta name="date" content="2020-04-19" />
+    
+    <title>Recommender System Scenario Analysis</title>
+
+        <script src="Recommender-Systems---Discussion-Assignment-12_files/jquery-1.11.3/jquery.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="Recommender-Systems---Discussion-Assignment-12_files/bootstrap-3.3.7/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="Recommender-Systems---Discussion-Assignment-12_files/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script src="Recommender-Systems---Discussion-Assignment-12_files/jqueryui-1.11.4/jquery-ui.min.js"></script>
+    <script src="Recommender-Systems---Discussion-Assignment-12_files/navigation-1.1/tabsets.js"></script>
+    <link href="Recommender-Systems---Discussion-Assignment-12_files/magnific-popup-1.1.0/magnific-popup.css" rel="stylesheet" />
+    <script src="Recommender-Systems---Discussion-Assignment-12_files/magnific-popup-1.1.0/jquery.magnific-popup.min.js"></script>
+    <link href="Recommender-Systems---Discussion-Assignment-12_files/readthedown-0.1/readthedown.css" rel="stylesheet" />
+    <script src="Recommender-Systems---Discussion-Assignment-12_files/readthedown-0.1/readthedown.js"></script>
+    
+    
+    
+    
+    <!-- tabsets -->
+    <script>
+      $(document).ready(function () {
+	  window.buildTabsets("toc");
+      });
+      $(document).ready(function () {
+	  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+	      $(this).parent().toggleClass('nav-tabs-open')
+	  });
+      });
+    </script>
+
+    <!-- code folding -->
+    
+    <!-- code download -->
+    
+    <!-- tabsets dropdown -->
+
+    <style type="text/css">
+      .tabset-dropdown > .nav-tabs {
+	  display: inline-table;
+	  max-height: 500px;
+	  min-height: 44px;
+	  overflow-y: auto;
+	  background: white;
+	  border: 1px solid #ddd;
+	  border-radius: 4px;
+      }
+      
+      .tabset-dropdown > .nav-tabs > li.active:before {
+	  content: "";
+	  font-family: 'Glyphicons Halflings';
+	  display: inline-block;
+	  padding: 10px;
+	  border-right: 1px solid #ddd;
+      }
+      
+      .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+	  content: "&#xe258;";
+	  border: none;
+      }
+      
+      .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+	  content: "";
+	  font-family: 'Glyphicons Halflings';
+	  display: inline-block;
+	  padding: 10px;
+	  border-right: 1px solid #ddd;
+      }
+      
+      .tabset-dropdown > .nav-tabs > li.active {
+	  display: block;
+      }
+
+      .tabset-dropdown > .nav-tabs > li.active a {
+  	  padding: 0 15px !important;
+      }
+
+      .tabset-dropdown > .nav-tabs > li > a,
+      .tabset-dropdown > .nav-tabs > li > a:focus,
+      .tabset-dropdown > .nav-tabs > li > a:hover {
+	  border: none;
+	  display: inline-block;
+	  border-radius: 4px;
+	  background-color: transparent;
+      }
+      
+      .tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+	  display: block;
+	  float: none;
+      }
+      
+      .tabset-dropdown > .nav-tabs > li {
+	  display: none;
+	  margin-left: 0 !important;
+      }
+    </style>
+    
+</head>
+
+<body>
+
+            <!-- readthedown start -->   
+   <div id="content" data-toggle="wy-nav-shift">
+     <nav id="nav-top" role="navigation" aria-label="top navigation">
+       <a role="button" href="#" data-toggle="wy-nav-top"><span class="glyphicon glyphicon-menu-hamburger"></span></a>
+     </nav>
+   
+     
+        
+      <h1 class="title">Recommender System Scenario Analysis</h1>
+      
+      <!-- readthedown authors -->
+   <div id="sidebar">
+    <h2><a href="#content">Recommender System Scenario Analysis</a></h2>
+    <div id="toc">
+      <ul>
+      <li><a href="#redfin-an-introduction">Redfin: an Introduction</a></li>
+      <li><a href="#redfins-recommendation-system---redfin-matchmaker">Redfin’s Recommendation System - <span color="palevioletred">Redfin Matchmaker</span></a></li>
+      <li><a href="#scenario-design">Scenario Design</a></li>
+      <li><a href="#conclusions-suggestions">Conclusions &amp; Suggestions</a></li>
+      </ul>
+    </div>
+    <div id="postamble" data-toggle="wy-nav-shift" class="status">
+                  <p class="author"><span class="glyphicon glyphicon-user"></span> Dennis Pong</p>
+                        <p class="date"><span class="glyphicon glyphicon-calendar"></span> 2020-04-19</p>
+          </div>
+   </div>
+   
+   
+   
+   
+   
+<div id="main">
+<div id="redfin-an-introduction" class="section level2">
+<h2>Redfin: an Introduction</h2>
+<p>Redfin is a search engine that allows prospetive home buyers to search on every single attribute of a home. Redfin Matchmaker, a service for recommending listings to you based on homes you’ve liked online and in person. Some recommendations will be for homes in a neighborhood you hadn’t considered, or with desirable attributes you never explicitly asked for but always seem to like. Many will be for homes you actually want to buy.</p>
+</div>
+<div id="redfins-recommendation-system---redfin-matchmaker" class="section level2">
+<h2>Redfin’s Recommendation System - <span color="palevioletred">Redfin Matchmaker</span></h2>
+<p>The recommender system is an hybrid of what the software gives you as a set of recommendations along with the final touches by a realtor who tailors your needs and profiles by sending you a personalized email. Even tho’ we know in actuality the email is also programmatically generated. Redfin markets it such that it is not purely the robots but the humans who are providing you the service the customers need. It mimics what stitchfix provides a ML algorithm + styler (a real person). I think this is very crucial because in a time-strapped scenario of any potential customers who are probably working full time and taking care of a family of multiple members, which is usually the standard scenario of why they need more space and upgrade to another better housing situation. In response to these demands, the only way to standout and differentiate oneself is really to provide a personalized approach.</p>
+<blockquote>
+<p>In Redfin’s words: It generates a set of recommendations based on your online activity, which Redfin agents then approve or reject based on our personal knowledge of what you like and don’t.</p>
+</blockquote>
+</div>
+<div id="scenario-design" class="section level2">
+<h2>Scenario Design</h2>
+<p>Scenario Design provides a simple framework for evaluating a User Experience (UX) perspective of an interactive system. Scenario Design Analysis applies three questions to make sure that needs of the users are addressed (Figure 1).</p>
+<div class="figure">
+<img src="scenario_ana.png" alt="Figure 1" width="89%" />
+<p class="caption">
+Figure 1
+</p>
+</div>
+<div id="for-redfin" class="section level3">
+<h3>for Redfin</h3>
+<p>There is not much value in evaluating the scenario design from the perspective of Redfin.com. Skipped this part.</p>
+</div>
+<div id="for-customers" class="section level3">
+<h3>for Customers</h3>
+<ol style="list-style-type: decimal">
+<li><p>Who are the target users?<br />
+Redfin caters to two main types of users: 1) home buyers, 2) home sellers, and 3) realtors, potential home buyers &amp; sellers to research about home values</p></li>
+<li><p>What are the key user goals?<br />
+The key user goals is strightforward. It’s to find a better housing situation at an affordable price. For the group 3 above, they are there to research, plan, and gather information about the home and its value. This is a good research vehicle for them to reap the benefits of a recommendation systems such as receiving personalized listings and do collaborative-filtering in their searches.</p></li>
+<li><p>How does Redfin accomplish these goals?<br />
+Redfin brilliantly balances the needs of its target users. Its homepage has an excellent interface. Three sections. Simple and easy to engage.</p></li>
+</ol>
+<p>According to a pioneer of the fields of information architecture and user experience, Peter Morville laid out a number of facets of the User Experience. They are represented below.</p>
+<div class="figure">
+<img src="user_experience_honeycomb.png" alt="Figure 2" width="54%" />
+<p class="caption">
+Figure 2
+</p>
+</div>
+<p>The key factors that influenced UX are as follows,</p>
+<ul>
+<li>Useful: Your content should be original and fulfill a need
+<ul>
+<li>Redfin’s search results offer useful contents</li>
+</ul></li>
+<li>Usable: Site must be easy to use
+<ul>
+<li>The redfin page is so simple with 3 sections. Very easy to use. Very intuitive. Very self-explantory</li>
+</ul></li>
+</ul>
+<div class="figure">
+<img src="screencapture-redfin.png" alt="Figure 3 - Snapshot of the homepage" width="85%" />
+<p class="caption">
+Figure 3 - Snapshot of the homepage
+</p>
+</div>
+<ul>
+<li>Desirable: Image, identity, brand, and other design elements are used to evoke emotion and appreciation
+<ul>
+<li>Yes. Redfin’s image quality, brand logo, and other design elements make it Google-like. The search results came back quickly as well. It further enticed people to use it to do quick research on homes.</li>
+</ul></li>
+<li>Findable: Content needs to be navigable and locatable onsite and offsite
+<ul>
+<li>Redfin checks this box as well. It boasts as the only website that has the most accurate and up-to-date transactions from MLS, which is by far better than its competitors in Trulia and Zillow.</li>
+</ul></li>
+<li>Accessible: Content needs to be accessible to people with disabilities
+<ul>
+<li>This article shows that it’s taking care of people with disabilities <a href="https://www.redfin.com/blog/the-comprehensive-guide-to-home-accessibility-for-people-with-disabilities-in-recovery/">link</a></li>
+</ul></li>
+<li>Credible: Users must trust and believe what you tell them
+<ul>
+<li>Redfin has great reviews about its Redfin Agents.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div id="conclusions-suggestions" class="section level2">
+<h2>Conclusions &amp; Suggestions</h2>
+<p>The redfin.com website did exhibit an excellent UX design. The elements to their recommendation system is great because they have the most reliable data reporting in its class as their integrations with MLS is top of class. Proof is <a href="https://youtu.be/iKTOlmaGGmA">here</a>. The only suggestion that I have for them is to build on using some of the state-of-art technologies, which they might have been leveraging, like clustering or using a better algorithm for even better results in regards to increasing the feasibility of home ownerships for potential buyers and feasibilty of selling for home sellers. I think that has to be driven more by data, which means a better capturing of intent of use is needed before any improvement in search results. But that could very well be another business model thru’ a subscription model for the target user groups to enhance their user experience with the brand Redfin. Currently, without a doubt, Redfin is alreay, by far, the best search engine in real-estate listing services.</p>
+</div>
+</div>
+   
+   
+      
+      
+
+  <script>
+    $(document).ready(function () {
+
+			
+ 		
+	    });
+  </script>
+
+
+
+    <!-- dynamically load mathjax for compatibility with self-contained -->
+  <script>
+    (function () {
+	var script = document.createElement("script");
+	script.type = "text/javascript";
+	script.src  = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+	document.getElementsByTagName("head")[0].appendChild(script);
+    })();
+  </script>
+  
+</body>
+</html>
