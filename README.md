@@ -50,3 +50,10 @@ Submssion # | R Mark Down file name
 ------------| --------------------------------------
 Submission 1| dpong-week10_assignment.Rmd
 ----------------------------------------------------
+
+# hw 8
+Submssion # | R Mark Down file name
+------------| --------------------------------------
+Submission 1| Recommender Systems - Discussion/Assignment 12.Rmd
+Submission 2| Recommender Systems - Discussion/Assignment 12 v2.Rmd
+----------------------------------------------------
