@@ -1,0 +1,123 @@
+---
+title: 'Recommender System Scenario Analysis'
+date: "`r Sys.Date()`"
+author: Dennis Pong
+output: 
+  rmdformats::readthedown:
+    # highlight: kate
+    # highlight: tango
+    # mathjax: local
+    # self_contained: false
+
+---
+
+```{r setup, echo=FALSE, cache=FALSE}
+# library(knitr)
+# library(rmdformats)
+# 
+# ## Global options
+# options(max.print="75")
+# opts_chunk$set(echo=FALSE,
+# 	             cache=TRUE,
+#                prompt=FALSE,
+#                tidy=TRUE,
+#                comment=NA,
+#                message=FALSE,
+#                warning=FALSE)
+# opts_knit$set(width=75)
+```
+
+
+# Redfin: an Introduction 
+
+Redfin is a search engine that allows prospetive home buyers to search on every single attribute of a home. Redfin Matchmaker, a service for recommending listings to you based on homes you’ve liked online and in person. Some recommendations will be for homes in a neighborhood you hadn’t considered, or with desirable attributes you never explicitly asked for but always seem to like. Many will be for homes you actually want to buy.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Redfin's Recommendation System - [Redfin Matchmaker]{color="palevioletred"} 
+
+The recommender system is an hybrid of what the software gives you as a set of recommendations along with the final touches by a realtor who tailors your needs and profiles by sending you a personalized email. Even tho' we know in actuality the email is also programmatically generated. Redfin markets it such that it is not purely the robots but the humans who are providing you the service the customers need. It mimics what stitchfix provides a ML algorithm + styler (a real person). I think this is very crucial because in a time-strapped scenario of any potential customers who are probably working full time and taking care of a family of multiple members, which is usually the standard scenario of why they need more space and upgrade to another better housing situation. In response to these demands, the only way to standout and differentiate oneself is really to provide a personalized approach. 
+
+> In Redfin's words:
+> It generates a set of recommendations based on your online activity, which Redfin agents then approve or reject based on our personal knowledge of what you like and don’t.
+
+
+
+
+
+
+# Scenario Design 
+Scenario Design provides a simple framework for evaluating a User Experience (UX) perspective of an interactive system. Scenario Design Analysis applies three questions to make sure that needs of the users are addressed (Figure 1). 
+
+```{r figure1, echo=FALSE, fig.cap="Figure 1", out.width = '89%'}
+knitr::include_graphics("scenario_ana.png")
+```
+
+## for Redfin
+There is not much value in evaluating the scenario design from the perspective of Redfin.com. Skipped this part.
+
+
+## for Customers
+1. Who are the target users?  
+Redfin caters to two main types of users: 1) home buyers, 2) home sellers, and 3) realtors, potential home buyers & sellers to research about home values
+
+2. What are the key user goals?  
+The key user goals is strightforward. It's to find a better housing situation at an affordable price. For the group 3 above, they are there to research, plan, and gather information about the home and its value. This is a good research vehicle for them to reap the benefits of a recommendation systems such as receiving personalized listings and do collaborative-filtering in their searches.
+
+3. How does Redfin accomplish these goals?  
+Redfin brilliantly balances the needs of its target users. Its homepage has an excellent interface. Three sections. Simple and easy to engage.
+
+According to a pioneer of the fields of information architecture and user experience, Peter Morville laid out a number of facets of the User Experience. They are represented below. 
+
+
+```{r figure2, echo=FALSE, fig.cap="Figure 2", out.width = '54%'}
+knitr::include_graphics("user_experience_honeycomb.png")
+```
+
+ The key factors that influenced UX are as follows, 
+
+* Useful: Your content should be original and fulfill a need  
+    +  Redfin's search results offer useful contents
+* Usable: Site must be easy to use  
+    +  The redfin page is so simple with 3 sections. Very easy to use. Very intuitive. Very self-explantory
+
+```{r figure3, echo=FALSE, fig.cap="Figure 3 - Snapshot of the homepage", out.width = '85%'}
+knitr::include_graphics("screencapture-redfin.png")
+```
+
+* Desirable: Image, identity, brand, and other design elements are used to evoke emotion and appreciation  
+    +  Yes. Redfin's image quality, brand logo, and other design elements make it Google-like. The search results came back quickly as well. It further enticed people to use it to do quick research on homes.
+* Findable: Content needs to be navigable and locatable onsite and offsite  
+    +  Redfin checks this box as well. It boasts as the only website that has the most accurate and up-to-date transactions from MLS, which is by far better than its competitors in Trulia and Zillow.
+* Accessible: Content needs to be accessible to people with disabilities  
+    +  This article shows that it's taking care of people with disabilities [link](https://www.redfin.com/blog/the-comprehensive-guide-to-home-accessibility-for-people-with-disabilities-in-recovery/)
+* Credible: Users must trust and believe what you tell them  
+    +   Redfin has great reviews about its Redfin Agents.
+
+
+
+
+# Conclusions & Suggestions
+
+The redfin.com website did exhibit an excellent UX design. The elements to their recommendation system is great because they have the most reliable data reporting in its class as their integrations with MLS is top of class. Proof is [here](https://youtu.be/iKTOlmaGGmA). The only suggestion that I have for them is to build on using some of the state-of-art technologies, which they might have been leveraging, like clustering or using a better algorithm for even better results in regards to increasing the feasibility of home ownerships for potential buyers and feasibilty of selling for home sellers. I think that has to be driven more by data, which means a better capturing of intent of use is needed before any improvement in search results. But that could very well be another business model thru' a subscription model for the target user groups to enhance their user experience with the brand Redfin. Currently, without a doubt, Redfin is alreay, by far, the best search engine in real-estate listing services. 
+
+
+
