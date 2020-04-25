@@ -56,3 +56,10 @@ Submssion # | R Mark Down file name
 ------------| --------------------------------------
 Submission 1| Recommender Systems - Discussion/Assignment 12.Rmd
 ----------------------------------------------------
+
+# tidyverse Extend 
+Submssion # | R Mark Down file name
+------------| --------------------------------------
+Submission 1| PurrrMap-LoseTheForLoop.rmd
+----------------------------------------------------
+
