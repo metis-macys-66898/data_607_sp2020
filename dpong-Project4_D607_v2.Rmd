@@ -1,0 +1,340 @@
+---
+title: "Project 4 (D607) -- Document (Tweet) Classification"
+author: "Dennis Pong"
+date: "4/25/2020"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(java.parameters = "-Xmx8g")  #modifies the Java back-end to be given more memory by default, virtual memory changed to 8 GB, default was 512 MB. Must precede extraTrees library loading
+
+```
+
+## Installing Packages
+```{r Package_prep}
+# install.packages("extraTrees")
+# install.packages("randomForest")
+# install.packages("ranger")
+require("klaR")
+```
+
+
+## Loading Libraries
+```{r}
+library(readr)
+library(purrr)
+library(dplyr)
+library(caTools)
+# Extremely Randomized Trees
+
+library(extraTrees)
+library(MASS) # Modern Applied Statistics with S (4th edition, 2002).
+library(randomForest)
+library(caret)
+library(ranger)
+library(ModelMetrics)
+library(xgboost)
+
+library(e1071) # e1071 for Navie Bayes Classifier
+```
+
+
+
+## Text Classification
+
+
+### Real or Not? NLP with Disaster Tweets
+
+#### What am I predicting?
+##### You are predicting whether a given tweet is about a real disaster or not. If so, predict a 1. If not, predict a 0.
+
+Motivation behind using this dataset is nothing more than the ease of finding the dataset on Kaggle as well as the nature of predicting earthquakes prompted me to dig into tweets of this sort. 
+
+Here is the layout of my analysis for this text classification problem.
+
+* Exporatory Data Analysis (examining of data)
+* Corpus building and Data Parsing (Pre-Processing)
+* Feature Extraction
+* Model Fitting 
+    +  Random Forest via Ranger, an alternative package for fitting a random forest
+    +  XGBoost, an alternative boosting package
+    +  Naïve Bayes Classifier (NBC)
+* Conclusions and Next Steps
+
+```{r data-loading}
+df <- read_csv('https://raw.githubusercontent.com/metis-macys-66898/data_607_sp2020/master/train.csv')
+
+```
+
+
+
+
+**Columns**  
+id - a unique identifier for each tweet  
+text - the text of the tweet  
+location - the location the tweet was sent from (may be blank)  
+keyword - a particular keyword from the tweet (may be blank)  
+target - in train.csv only, this denotes whether a tweet is about a real disaster (1) or not (0)    
+
+
+```{r}
+head(df)
+```
+
+```{r}
+# percentages of NAs for each of the columns in df
+map_dbl(df, ~ sum(is.na(.))/nrow(df)*100)
+```
+
+```{r}
+df <- df %>% dplyr::select(-c(id, keyword, location))
+head(df)
+```
+
+```{r}
+df %>% group_by(target) %>% tally() %>% mutate(Percentage=n/sum(n)*100) %>% round(digits = 2)
+
+```
+
+#### We see that there are 57% of the tweets are labeled as 0, namely, a tweet not about a disaster, and 43% is about a disaster.
+
+#### Next, we'll need to build a corpus using tm and do two data cleaning steps before I use some standing functions that come with Document Term Matrix, which I have used in project 3 (haha!)
+
+1. Remove whitespaces 
+2. Convert the whole document to lower cases for uniformity
+
+```{r steps_1_&_2}
+corpus <- tm::VCorpus(tm::VectorSource(df$text))
+
+# 1. remove whitespaces
+corpus.ws_rm <- tm::tm_map(corpus, tm::stripWhitespace)
+
+# 2. to_lowercase 
+corpus.tolower <- tm::tm_map(corpus.ws_rm , tm::content_transformer(tolower))
+```
+
+```{r control_list}
+control_list <- list(removePunctuation = TRUE,
+                     stopwords = TRUE,
+                     stemming = TRUE
+                    )
+
+```
+
+3. Remove puncutations
+4. Remove stopwords
+5. Stem words in a text document using Porter's stemming algorithm
+
+```{r steps_3_to_5}
+
+# 3. remove puncutations
+dtm <- tm::DocumentTermMatrix(corpus.tolower, control = control_list)
+dtm
+tm::inspect(dtm[1:13, 1:15])
+```
+
+Documents has 19,114 terms while there are a total of 7,613 documents. Sparsity 100% means there is nothing currently removed from the Document Term Matrix. I'm going to alter the thresholds to 99%, meaning if there is a sparse word that only appears <1 % in the documents, I'll remove it.
+
+
+```{r}
+# remove sparse words that appears less than 1% of the time. Essentially setting the sparsity thresholds at 99%
+dtm <- tm::removeSparseTerms(dtm, sparse = 0.999) 
+```
+
+```{r}
+# Converting DocumentTermMatrix into a data frame 
+tweet_final_df <- data.frame(as.matrix(dtm), stringsAsFactors = FALSE)
+
+# Adding the target column to enable modeling. Each obs in tweet_final_df is at the tweet level.
+tweet_final_df$target <- df$target
+```
+
+### Splitting train and test set into 80/20. 
+    + train_df is the traning set of 6073 observations
+    + test_df is the test se of 1540 observations
+
+```{r}
+set.seed(8898)
+split = sample.split(tweet_final_df, SplitRatio = 0.80)
+
+train_df = subset(tweet_final_df, split == TRUE)
+test_df  = subset(tweet_final_df, split == FALSE)
+
+
+
+# QA step: 
+unique(train_df$target)
+tally(train_df)
+unique(test_df$target)
+tally(test_df)
+```
+
+### Model selection and comparison
+
+There are two criteria for evaluting the models. One is via the confusion matrix. The other is run time. This is for practicality purposes. In real-world situations, model will have to pass the run-time test to meet certain thresholds for response time.
+
+
+
+
+```{r cv8}
+
+str(train_df)
+# cv6 = trainControl(method = "cv", number = 6)
+# cv4 = trainControl(method = "cv", number = 4)
+# cv2 = trainControl(method = "cv", number = 2)
+# rf_grid =  expand.grid(mtry = 1:13) # 1573 terms
+# rf_grid =  expand.grid(mtry = 1:14)
+```
+
+
+Train the model
+
+
+#### Ranger
+
+A fast implementation of random forests (Breiman 2001) or recursive partitioning, particularly suited for high dimensional data.
+```{r}
+# set.seed(43)
+# system.time({ranger_fit = train(as.factor(train_df$target) ~ ., data = train_df,
+#                                 method = "ranger",
+#                                 trControl = cv4,
+#                                 num.threads = 1,
+#                                 tuneGrid = (mtry, ))
+#             }
+#           )
+
+time <- system.time({
+        ranger_fit = ranger (target ~ ., data = train_df)
+})
+mins = unlist(sum(time[2] + time[3]))%/%60
+secs = unlist(sum(time[2] + time[3]))%%60
+cat("Time taken is:", mins , " mins and ", secs, " seconds.")
+
+
+
+# calculating Root-Mean Square Error (RMSE)
+cat("Ranger's RMSE is:", rmse(predict(ranger_fit, test_df)$predictions, test_df$target) )
+
+# Confusion Matrix
+Ranger_pred <- predict(ranger_fit, test_df)
+
+Ranger_pred <- ifelse(Ranger_pred$predictions > 0.5, 1,0)
+
+caret::confusionMatrix(data = factor(Ranger_pred, levels=c(1,0)),
+                        reference =factor(test_df$target, levels=c(1,0))
+)
+
+# Accuracy: 0.7633 (Balanced Accuracy: 0.7530)
+
+```
+
+
+
+
+#### XGBoost : eXtreme Gradient Boosting
+
+An ensemble of randomized decision trees that basically averages out the results of individual decision trees based on the parameter nrounds, which controls the max number of boosting iterations.
+```{r}
+
+# removing the target variable, which is a dependent variable, at column location 1353. 
+# which( colnames(train_df)=="target" )
+time <- system.time({
+            XGBoost <-xgboost(as.matrix(train_df[-which( colnames(train_df)=="target" )]), label=as.vector(train_df$target),nrounds=100)
+})
+
+mins = unlist(sum(time[2] + time[3]))%/%60
+secs = unlist(sum(time[2] + time[3]))%%60
+cat("Time taken is:", mins , " mins and ", secs, " seconds.")
+
+
+XGBoostpred <- predict(XGBoost, as.matrix(test_df[-which( colnames(train_df)=="target" )]))
+
+
+# XGBoostpred
+
+# recoding the outcome from a range from 0 to 1 to categorical variables 1 and 0.
+XGBoostpred <- ifelse(XGBoostpred >0.5, 1,0)
+caret::confusionMatrix(data = factor(XGBoostpred, levels=c(1,0)),
+                        reference =factor(test_df$target, levels=c(1,0))
+                        
+                      )
+
+
+# Accuracy:
+# 10 = 0.7297 (Balanced Accuracy: 0.7000)
+# 51 = 0.7971 (Balanced Accuracy: 0.7809)  
+# 94 = 0.7991 (Balanced Accuracy: 0.7849)
+# 100 = 0.8056 (Balanced Accuracy: 0.7914)
+# 104 = 0.8037 (Balanced Accuracy: 0.7891)
+# 204 = 0.7997 (Balanced Accuracy: 0.7877)
+
+```
+
+#### Naïve Bayes Classifier
+
+A simple probabilistic classifier which is based on Bayes theorem but with strong assumptions regarding independence. Historically, this technique became popular with applications in email filtering, spam detection, and document categorization. Although it is often outperformed by other techniques, and despite the naïve design and oversimplified assumptions, this classifier can perform well in many complex real-world problems. And since it is a resource efficient algorithm that is fast and scales well, it is definitely a machine learning algorithm to have in your toolkit.
+```{r}
+# create response and feature data
+features <- setdiff(names(train_df), "Target")
+x <- train_df[, features]
+y <- train_df$target
+
+
+# set up 10-fold cross validation procedure
+# train_control <- trainControl(
+#   method = "cv", 
+#   number = 10
+#   )
+# 
+# # train model
+# nb.m1 <- train(
+#   x = x,
+#   y = factor(y, levels = c(1,0)),
+#   method = "nb",
+#   trControl = train_control
+#   )
+# 
+# # results
+# confusionMatrix(nb.m1)
+
+time <- system.time({
+              NBC <- naiveBayes(train_df[, features], as.factor(y))
+})
+
+cat("Time taken is:", sum(time[2] + time[3]), " seconds.")
+
+NBC_pred <-predict(NBC,test_df[, features])
+
+caret::confusionMatrix(data = NBC_pred, reference = as.factor(test_df$target), positive = "1")
+
+# Accuracy:  0.6793 (Balanced Accuracy: 0.6485)
+```
+
+## Conclusions
+
+For this classification modeling exercise, it's obvious that we not only have to evaluate based on accuracy (or balanced accuracy taking everything into account) but also the time taken to execute the training of the model. 
+
+From the accuracy perspective, XGBoost, namely, the extreme Graident Boosting, method is by far the most accurate, as I get 81% accuracy as well as 79% balanced accuracy. Naive Bayes Classifier for this problem is probably the faster as it only took 1.36 seconds to train. 
+
+On the other hand, Ranger was developed in 2001. Not surprisingly, it's with a decent accuracy at **76%** and Balanced Accuracy at **75%**. It took the longest among the three methods to train the model.
+
+
+## Next Steps
+
+I was only using the default algorithm for Naive Bayes Classifer. I believe there are more ways to tune the model. I believe that's something that I can invest some time into as the next stage of this project. 
+
+Weighting was something that I left off intentionally this time after using weight in my project 3 (the group project). I believe there is value in it. But I just wanted to keep everything else as simpler and as smoothly run as possibble before comparing any models. Of course, there should be some weights if twitter text has strings like USGS and earthquake.usgs.gov, I'd definitely give more weight to these terms for determining whether the disaster is real or not. 
+
+
+
+
+## References
+
+
+1. [Real or Not? NLP with Disaster Tweets|Data](https://www.kaggle.com/c/nlp-getting-started/data)
+2. [Naïve Bayes Classifier](http://uc-r.github.io/naive_bayes)
+3. [Extremely Randomized Trees, Ranger, XGBoost](https://daviddalpiaz.github.io/stat432sp18/lab/enslab/enslab.html)
+4. [Naives Bayes -- Specific Classifier Optimizations](https://stackoverflow.com/questions/3473612/ways-to-improve-the-accuracy-of-a-naive-bayes-classifier)
+
